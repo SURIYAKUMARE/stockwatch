@@ -19,6 +19,8 @@ import { StateDashboard } from './components/StateDashboard';
 import { NationalDashboard } from './components/NationalDashboard';
 import { DeduplicationReview } from './components/DeduplicationReview';
 import { AuditLogViewer } from './components/AuditLogViewer';
+import { OfflineQueueModal } from './components/OfflineQueueModal';
+import { WifiOff } from 'lucide-react';
 
 import {
   Centre,
@@ -30,7 +32,12 @@ import {
   AuthUser
 } from './types';
 import { Language } from './i18n';
-import { getOfflineQueue, flushOfflineQueue } from './db/offlineQueue';
+import {
+  getOfflineQueue,
+  flushOfflineQueue,
+  clearSensitiveOfflineStorage,
+  refreshOfflineBootstrapData
+} from './db/offlineQueue';
 
 const DEMO_USERS: Record<UserRole, AuthUser> = {
   patient: {
@@ -119,11 +126,14 @@ export function App() {
   // Modals
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [showRegisterModal, setShowRegisterModal] = useState<boolean>(false);
+  const [showQueueModal, setShowQueueModal] = useState<boolean>(false);
   const [loginDefaultRole, setLoginDefaultRole] = useState<string | undefined>(undefined);
 
-  // Network & Offline Queue
+  // Network, PWA & Offline Queue
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(getOfflineQueue().length);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [canInstallPWA, setCanInstallPWA] = useState<boolean>(false);
 
   // Core Data
   const [centres, setCentres] = useState<Centre[]>([]);
@@ -163,12 +173,19 @@ export function App() {
 
   useEffect(() => {
     refreshAllData();
+    refreshOfflineBootstrapData();
+
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+      setCanInstallPWA(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     const handleOnline = () => {
       setIsOnline(true);
-      flushOfflineQueue(() => {
+      flushOfflineQueue().then(({ synced }) => {
         setPendingSyncCount(getOfflineQueue().length);
-      }).then(({ synced }) => {
         if (synced > 0) refreshAllData();
       });
     };
@@ -181,10 +198,21 @@ export function App() {
     window.addEventListener('offline', handleOffline);
 
     return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setCanInstallPWA(false);
+      setDeferredInstallPrompt(null);
+    }
+  };
 
   const handleSyncNow = async () => {
     const { synced } = await flushOfflineQueue();
@@ -272,6 +300,9 @@ export function App() {
 
   // Logout Handler
   const handleLogout = () => {
+    if (currentUser?.id) {
+      clearSensitiveOfflineStorage(currentUser.id);
+    }
     setCurrentUser(null);
     localStorage.removeItem('stockwatch_user');
     localStorage.removeItem('stockwatch_token');
@@ -377,7 +408,28 @@ export function App() {
           currentUser={currentUser}
           onLogout={handleLogout}
           onOpenLogin={() => setShowLoginModal(true)}
+          onOpenQueueModal={() => setShowQueueModal(true)}
+          canInstallPWA={canInstallPWA}
+          onInstallPWA={handleInstallPWA}
         />
+
+        {/* Offline Persistent Warning Banner */}
+        {!isOnline && (
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-xs text-amber-900 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5 font-medium">
+              <WifiOff size={16} className="text-amber-700 shrink-0" />
+              <span>
+                <strong>Offline Mode Active:</strong> Operating on cached records. Stock updates and shortage requests are stored in your device's IndexedDB and will auto-synchronize when reconnected.
+              </span>
+            </div>
+            <button
+              onClick={() => setShowQueueModal(true)}
+              className="px-2.5 py-1 rounded-md bg-amber-200/90 hover:bg-amber-300 font-bold text-amber-950 transition text-[11px]"
+            >
+              View Queue ({pendingSyncCount})
+            </button>
+          </div>
+        )}
 
         {/* Active Screen View */}
         <main className="flex-1 overflow-y-auto">
@@ -528,6 +580,15 @@ export function App() {
         onSuccess={() => {
           setShowRegisterModal(false);
           setShowLoginModal(true);
+        }}
+      />
+      <OfflineQueueModal
+        isOpen={showQueueModal}
+        onClose={() => setShowQueueModal(false)}
+        isOnline={isOnline}
+        onSyncComplete={() => {
+          refreshAllData();
+          setPendingSyncCount(getOfflineQueue().length);
         }}
       />
     </div>

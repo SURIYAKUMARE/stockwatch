@@ -74,9 +74,7 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
             onClick={onGoToLanding}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <HeartPulse size={22} className="text-white" />
-            </div>
+            <img src="/logo.png" alt="StockWatch PHC Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-0.5 shadow-sm" />
             <div>
               <div className="text-lg font-bold tracking-tight">StockWatch PHC</div>
               <div className="text-xs text-teal-200">Medicine Supply Early-Warning</div>

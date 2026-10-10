@@ -285,9 +285,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-b border-[#E3E8EE]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#0F6B6B] flex items-center justify-center text-white shadow-sm">
-              <HeartPulse size={20} />
-            </div>
+            <img src="/logo.png" alt="StockWatch PHC Logo" className="w-9 h-9 object-contain rounded-xl shadow-xs" />
             <div>
               <h1 className="text-base font-bold text-[#14202B] tracking-tight leading-tight">
                 {t.app_title || 'StockWatch PHC'}

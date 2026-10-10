@@ -362,3 +362,20 @@ class PurchaseOrder(SQLModel, table=True):
     created_by: str = "Pharmacist"
     created_at: datetime = Field(default_factory=get_utc_now)
 
+# ================= OFFLINE SYNCHRONIZATION & CONFLICT AUDIT =================
+class OfflineSyncAction(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    client_action_id: str = Field(index=True, unique=True)
+    action_type: str # DISPENSE, RECEIVE, STOCK_ADJUST, CREATE_SHORTAGE_REQUEST, PATIENT_REMINDER_LOG, TRANSFER_RECORD
+    user_id: str
+    facility_id: str
+    device_id: str
+    client_timestamp: str
+    base_stock: Optional[int] = None
+    applied_stock: Optional[int] = None
+    status: str = "SYNCED" # SYNCED, ALREADY_SYNCED, CONFLICT_DETECTED, RECONCILIATION_REQUIRED, FAILED
+    conflict_details: Optional[str] = None
+    server_resolved_stock: Optional[int] = None
+    result_data_json: str = "{}"
+    created_at: datetime = Field(default_factory=get_utc_now)
+

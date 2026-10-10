@@ -30,9 +30,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Top Navigation */}
       <header className="h-16 bg-white border-b border-[#E3E8EE] px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#0F6B6B] flex items-center justify-center text-white shadow-xs">
-            <Activity size={22} className="stroke-[2.5]" />
-          </div>
+          <img src="/logo.png" alt="StockWatch PHC Logo" className="w-10 h-10 object-contain rounded-xl shadow-xs" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-base tracking-tight text-[#14202B]">

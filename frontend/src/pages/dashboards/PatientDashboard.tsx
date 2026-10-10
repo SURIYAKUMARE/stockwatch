@@ -22,6 +22,14 @@ import {
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type { AppScreen } from '../../components/nav/AppShell';
+import {
+  savePriceComparisonToCache,
+  getCachedPriceComparison,
+  enqueueOfflineAction,
+  getDeviceId,
+  getCachedPatientSchedules,
+  savePatientSchedulesToCache
+} from '../../db/offlineQueue';
 
 interface PriceComparisonSource {
   facility_id: string;
@@ -118,8 +126,10 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   const [newDose, setNewDose] = useState('1 tablet');
   const [newTime, setNewTime] = useState('08:00');
   const [newInstructions, setNewInstructions] = useState('Take with water after breakfast');
+  const [isOfflinePricing, setIsOfflinePricing] = useState(false);
+  const [offlineCachedTime, setOfflineCachedTime] = useState<string | null>(null);
 
-  // Fetch Price Comparison Data
+  // Fetch Price Comparison Data with Offline IndexedDB Fallback
   const fetchPriceComparison = async (medQuery: string) => {
     setIsLoadingSearch(true);
     try {
@@ -127,9 +137,26 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
       if (res.ok) {
         const json = await res.json();
         setComparisonData(json);
+        setIsOfflinePricing(false);
+        if (json.sources && Array.isArray(json.sources)) {
+          savePriceComparisonToCache(medQuery, json.sources).catch(() => {});
+        }
+      } else {
+        throw new Error('Network error');
       }
     } catch (err) {
-      console.error('Failed to fetch price comparison', err);
+      // Fallback to IndexedDB offline price cache
+      const cached = await getCachedPriceComparison(medQuery);
+      if (cached && cached.sources) {
+        setComparisonData({
+          medicine_name: medQuery,
+          strength: 'Standard',
+          dosage_form: 'Various',
+          sources: cached.sources
+        });
+        setIsOfflinePricing(true);
+        setOfflineCachedTime(new Date(cached.cached_at).toLocaleTimeString());
+      }
     } finally {
       setIsLoadingSearch(false);
     }
@@ -151,7 +178,7 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
     }
   };
 
-  // Fetch Reminders & Adherence
+  // Fetch Reminders & Adherence with Offline IndexedDB Fallback
   const fetchRemindersData = async () => {
     setIsLoadingReminders(true);
     try {
@@ -162,33 +189,69 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
       if (remRes.ok) {
         const remJson = await remRes.json();
         setReminders(remJson.schedules || []);
+        if (remJson.schedules) {
+          savePatientSchedulesToCache(remJson.schedules).catch(() => {});
+        }
       }
       if (adhRes.ok) {
         const adhJson = await adhRes.json();
         setAdherenceReport(adhJson);
       }
     } catch (err) {
-      console.error('Failed to fetch reminders data', err);
+      // Fallback to IndexedDB offline schedules
+      const cachedSchedules = await getCachedPatientSchedules();
+      if (cachedSchedules && cachedSchedules.length > 0) {
+        setReminders(cachedSchedules as any);
+      }
     } finally {
       setIsLoadingReminders(false);
     }
   };
 
-  // Handle reminder action: TAKEN, SKIPPED, SNOOZED
+  // Handle reminder action: TAKEN, SKIPPED, SNOOZED with Offline Queue Fallback
   const handleReminderAction = async (scheduleId: string, time: string, action: 'TAKEN' | 'SKIPPED' | 'SNOOZED') => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const scheduledTime = `${todayStr} ${time}`;
+
+    // Optimistically update reminder status locally
+    setReminders((prev) =>
+      prev.map((sch) => {
+        if (sch.id === scheduleId && sch.times_with_status) {
+          return {
+            ...sch,
+            times_with_status: sch.times_with_status.map((t) =>
+              t.time === time ? { ...t, status: action } : t
+            )
+          };
+        }
+        return sch;
+      })
+    );
+
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const scheduledTime = `${todayStr} ${time}`;
       const res = await fetch(`/api/patient/reminders/${scheduleId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, scheduled_time: scheduledTime })
       });
-      if (res.ok) {
-        await fetchRemindersData();
-      }
+      if (!res.ok) throw new Error('Offline');
+      await fetchRemindersData();
     } catch (err) {
-      console.error('Failed to log reminder action', err);
+      // Offline fallback: Queue into IndexedDB action queue
+      await enqueueOfflineAction({
+        action_type: 'PATIENT_REMINDER_LOG',
+        user_id: 'patient_demo',
+        user_name: 'Patient (Self)',
+        user_role: 'patient',
+        facility_id: 'coimbatore',
+        device_id: getDeviceId(),
+        payload: {
+          schedule_id: scheduleId,
+          patient_id: 'patient_demo',
+          action,
+          scheduled_time: scheduledTime
+        }
+      });
     }
   };
 
@@ -452,6 +515,15 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
                 <span>Clinical Drug Monograph</span>
               </button>
             </div>
+
+            {isOfflinePricing && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2 font-medium">
+                <AlertTriangle size={15} className="text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Cached Offline Pricing (Retrieved {offlineCachedTime || 'earlier'}):</strong> Displaying previously saved pharmacy prices and addresses. Live availability and real-time counter quotes cannot be verified without an internet connection.
+                </div>
+              </div>
+            )}
 
             <div className="overflow-x-auto border border-[#E3E8EE] rounded-xl">
               <table className="w-full text-left text-xs">

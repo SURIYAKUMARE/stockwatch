@@ -20,10 +20,18 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Check,
-  Info
+  Info,
+  WifiOff
 } from 'lucide-react';
 import { Language, translations } from '../i18n';
 import { AuthUser } from '../types';
+import {
+  getCachedInventory,
+  saveInventoryToOfflineCache,
+  enqueueOfflineAction,
+  updateLocalInventoryOptimistic,
+  getDeviceId
+} from '../db/offlineQueue';
 
 interface PharmacyDashboardProps {
   currentUser: AuthUser | null;
@@ -94,6 +102,15 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
   const [csvPreview, setCsvPreview] = useState<any[]>([]);
   const [importStatus, setImportStatus] = useState<string | null>(null);
 
+  // Offline PWA State
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(!navigator.onLine);
+  const [lastCachedTimestamp, setLastCachedTimestamp] = useState<string | null>(null);
+  const [showShortageModal, setShowShortageModal] = useState<boolean>(false);
+  const [shortageMedId, setShortageMedId] = useState<string>('med_pcm');
+  const [shortageQty, setShortageQty] = useState<number>(50);
+  const [shortageUrgency, setShortageUrgency] = useState<string>('URGENT');
+  const [offlineShortageIndents, setOfflineShortageIndents] = useState<any[]>([]);
+
   // Load pharmacies and current details
   const fetchPharmacyData = async () => {
     setIsLoading(true);
@@ -109,6 +126,23 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
       if (availRes && availRes.pharmacy) {
         setPharmacyInfo(availRes.pharmacy);
         setInventory(availRes.inventory || []);
+
+        // Cache into IndexedDB for offline operation
+        if (availRes.inventory) {
+          saveInventoryToOfflineCache(
+            availRes.inventory.map((inv: any) => ({
+              key: `${pharmacyId}_${inv.medicine_id}`,
+              centre_id: pharmacyId,
+              medicine_id: inv.medicine_id,
+              medicine_name: inv.medicine_name,
+              unit: 'units',
+              current_stock: inv.quantity,
+              last_cached_at: new Date().toISOString()
+            }))
+          ).catch(() => {});
+        }
+        setIsOfflineMode(false);
+        setLastCachedTimestamp(new Date().toLocaleTimeString());
       }
       if (ownerRes && ownerRes.batches) {
         setBatches(ownerRes.batches);
@@ -117,7 +151,22 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
         setEnquiries(enqRes);
       }
     } catch (e) {
-      console.error('Failed to load pharmacy data', e);
+      console.warn('Network unreachable, reading cached pharmacy inventory from IndexedDB:', e);
+      setIsOfflineMode(true);
+      const cached = await getCachedInventory(pharmacyId);
+      if (cached && cached.length > 0) {
+        setInventory(
+          cached.map((c) => ({
+            medicine_id: c.medicine_id,
+            medicine_name: c.medicine_name,
+            strength: 'Standard',
+            dosage_form: 'Various',
+            quantity: c.current_stock,
+            last_updated: c.last_cached_at ? new Date(c.last_cached_at).toLocaleTimeString() : 'Cached Offline'
+          }))
+        );
+        setLastCachedTimestamp(cached[0]?.last_cached_at ? new Date(cached[0].last_cached_at).toLocaleTimeString() : 'Earlier');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -132,6 +181,49 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
     e.preventDefault();
     if (!selectedMedId) return;
     setTxSubmitting(true);
+
+    if (!navigator.onLine) {
+      // Offline mutation
+      const delta = txType === 'receive' ? Number(txQty) : -Number(txQty);
+      await updateLocalInventoryOptimistic(pharmacyId, selectedMedId, delta);
+      const currentMed = inventory.find((i) => i.medicine_id === selectedMedId);
+      const baseStock = currentMed ? currentMed.quantity : 0;
+
+      await enqueueOfflineAction({
+        action_type: txType === 'receive' ? 'RECEIVE' : txType === 'adjust' ? 'STOCK_ADJUST' : 'DISPENSE',
+        user_id: currentUser?.username || 'Pharmacist',
+        user_name: currentUser?.name || 'Pharmacist',
+        user_role: 'pharmacist',
+        facility_id: pharmacyId,
+        device_id: getDeviceId(),
+        base_stock: baseStock,
+        payload: {
+          centre_id: pharmacyId,
+          medicine_id: selectedMedId,
+          type: txType,
+          qty: Number(txQty),
+          batch: txBatch,
+          expiry: txExpiry,
+          user: currentUser?.name || 'Pharmacist'
+        }
+      });
+
+      // Optimistic update of local inventory state
+      setInventory((prev) =>
+        prev.map((item) =>
+          item.medicine_id === selectedMedId
+            ? { ...item, quantity: Math.max(0, item.quantity + delta), last_updated: 'Pending Sync (Offline)' }
+            : item
+        )
+      );
+
+      setShowTxModal(false);
+      setTxReason('');
+      setTxSubmitting(false);
+      alert('Stock mutation saved locally to IndexedDB queue with status "Pending Sync". Will auto-sync when connected.');
+      return;
+    }
+
     try {
       const payload = {
         owner_type: 'pharmacy',
@@ -162,6 +254,64 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
       alert('Network error recording transaction');
     } finally {
       setTxSubmitting(false);
+    }
+  };
+
+  // Handle Shortage Request (Supports Offline IndexedDB Queue)
+  const handleCreateShortageRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shortageMedId) return;
+
+    if (!navigator.onLine) {
+      await enqueueOfflineAction({
+        action_type: 'CREATE_SHORTAGE_REQUEST',
+        user_id: currentUser?.username || 'Pharmacist',
+        user_name: currentUser?.name || 'Pharmacist',
+        user_role: 'pharmacist',
+        facility_id: pharmacyId,
+        device_id: getDeviceId(),
+        payload: {
+          centre_id: pharmacyId,
+          medicine_id: shortageMedId,
+          quantity: Number(shortageQty),
+          urgency_level: shortageUrgency
+        }
+      });
+
+      setOfflineShortageIndents((prev) => [
+        {
+          id: 'off_indent_' + Date.now(),
+          medicine_id: shortageMedId,
+          quantity: Number(shortageQty),
+          urgency: shortageUrgency,
+          status: 'PENDING_SYNC',
+          created_at: new Date().toLocaleTimeString()
+        },
+        ...prev
+      ]);
+
+      setShowShortageModal(false);
+      alert('Shortage request saved locally with status "Pending Sync". 6-Tier automated escalation to town, district, and state suppliers will initiate once online.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/redistribution/auto-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shortage_facility_id: pharmacyId,
+          medicine_id: shortageMedId,
+          needed_quantity: Number(shortageQty),
+          urgency: shortageUrgency
+        })
+      });
+      if (res.ok) {
+        setShowShortageModal(false);
+        alert('Shortage request dispatched to smart redistribution network!');
+      }
+    } catch (e) {
+      alert('Network error submitting shortage request');
     }
   };
 
@@ -243,6 +393,23 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Offline Mode Alert */}
+      {isOfflineMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <WifiOff size={18} className="text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold">Offline Pharmacist Mode Active:</span> Viewing cached inventory snapshot
+              {lastCachedTimestamp && ` (last synced ${new Date(lastCachedTimestamp).toLocaleTimeString()})`}.
+              All stock adjustments, dispensations, and shortage requests are stored safely in local IndexedDB and will synchronize upon reconnection.
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-200 text-amber-900 tracking-wide">
+            OFFLINE CACHED
+          </span>
+        </div>
+      )}
+
       {/* Top Banner / Pharmacy Identity */}
       <div className="bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -417,6 +584,16 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
             >
               <Plus size={14} />
               <span>Receive Shipment</span>
+            </button>
+            <button
+              onClick={() => {
+                setShortageMedId(inventory[0]?.medicine_id || 'med_pcm');
+                setShowShortageModal(true);
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1.5"
+            >
+              <FileText size={14} />
+              <span>Create Shortage Indent</span>
             </button>
           </div>
         )}
@@ -875,6 +1052,106 @@ export const PharmacyDashboard: React.FC<PharmacyDashboardProps> = ({
                   className="px-4 py-2 rounded-lg text-xs font-bold bg-[#0F6B6B] text-white hover:bg-[#0c5555] transition"
                 >
                   {txSubmitting ? 'Recording...' : 'Confirm Transaction'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Shortage Request Modal */}
+      {showShortageModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-[#E3E8EE] max-w-md w-full p-5 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
+              <div>
+                <h3 className="font-bold text-sm text-[#14202B]">Create Shortage Indent</h3>
+                <p className="text-[11px] text-[#5B6B7A]">
+                  {isOfflineMode
+                    ? 'Request will queue offline with status "Pending Sync" and trigger 6-tier redistribution when online'
+                    : 'Dispatches automated 6-tier replenishment across town, district, and state nodes'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowShortageModal(false)}
+                className="p-1 rounded-lg hover:bg-[#F7F9FB] text-[#5B6B7A]"
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateShortageRequest} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-[#14202B] mb-1">
+                  Medicine
+                </label>
+                <select
+                  value={shortageMedId}
+                  onChange={(e) => setShortageMedId(e.target.value)}
+                  className="w-full text-xs bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg p-2.5"
+                  required
+                >
+                  {inventory.map((m) => (
+                    <option key={m.medicine_id} value={m.medicine_id}>
+                      {m.medicine_name} ({m.strength}) - Current: {m.quantity}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#14202B] mb-1">
+                    Required Units
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={shortageQty}
+                    onChange={(e) => setShortageQty(parseInt(e.target.value, 10) || 1)}
+                    className="w-full text-xs bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg p-2.5 font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#14202B] mb-1">
+                    Urgency Level
+                  </label>
+                  <select
+                    value={shortageUrgency}
+                    onChange={(e) => setShortageUrgency(e.target.value)}
+                    className="w-full text-xs bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg p-2.5"
+                  >
+                    <option value="ROUTINE">Routine (Normal restocking)</option>
+                    <option value="URGENT">Urgent (Stock below minimum)</option>
+                    <option value="CRITICAL">Critical (Stock zero / Life saving)</option>
+                  </select>
+                </div>
+              </div>
+
+              {isOfflineMode && (
+                <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
+                  <WifiOff size={14} className="shrink-0 mt-0.5" />
+                  <span>
+                    Device is currently offline. This indent will be signed and stored in IndexedDB with an idempotency key.
+                    Official town → district → state escalation begins automatically upon reconnection.
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#E3E8EE]">
+                <button
+                  type="button"
+                  onClick={() => setShowShortageModal(false)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold text-[#5B6B7A] hover:bg-[#F7F9FB]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-[#0F6B6B] text-white hover:bg-[#0c5555] transition"
+                >
+                  {isOfflineMode ? 'Queue Offline Indent' : 'Dispatch Shortage Request'}
                 </button>
               </div>
             </form>

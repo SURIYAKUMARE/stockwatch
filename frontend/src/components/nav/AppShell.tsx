@@ -249,9 +249,7 @@ export function AppShell({
       {/* Brand */}
       <div className="p-4 border-b border-[#E3E8EE] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#0F6B6B] flex items-center justify-center text-white shadow-sm">
-            <HeartPulse size={18} />
-          </div>
+          <img src="/logo.png" alt="StockWatch PHC Logo" className="w-9 h-9 object-contain rounded-xl shadow-xs" />
           <div>
             <h1 className="text-sm font-bold text-[#14202B] leading-tight">StockWatch PHC</h1>
             <p className="text-[10px] text-[#5B6B7A] leading-none mt-0.5">{roleLabel(user.role)}</p>

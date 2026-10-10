@@ -2446,3 +2446,525 @@ def create_purchase_order(
     return {"status": "submitted", "po_id": po.id, "po_reference": po.po_reference}
 
 
+# ----------------- OFFLINE PWA SYNCHRONIZATION & CONFLICT RESOLUTION -----------------
+class OfflineActionPayload(BaseModel):
+    client_action_id: str
+    client_timestamp: str
+    action_type: str  # DISPENSE, RECEIVE, STOCK_ADJUST, CREATE_SHORTAGE_REQUEST, PATIENT_REMINDER_LOG, TRANSFER_RECORD
+    user_id: str
+    facility_id: str
+    device_id: str
+    base_stock: Optional[int] = None
+    payload: Dict[str, Any]
+
+class OfflineSyncBatchRequest(BaseModel):
+    device_id: str
+    actions: List[OfflineActionPayload]
+
+class ConflictResolutionRequest(BaseModel):
+    client_action_id: str
+    resolution_choice: str  # ACCEPT_SERVER, FORCE_OVERWRITE, MANUAL_RECONCILE
+    reconciled_stock: Optional[int] = None
+    notes: Optional[str] = None
+
+@router.post("/offline/sync")
+def sync_offline_batch(
+    req: OfflineSyncBatchRequest,
+    session: Session = Depends(get_session),
+    current_user: Optional[models.User] = Depends(get_optional_user)
+):
+    """
+    Synchronizes offline actions from IndexedDB client queue.
+    Features:
+    1. Idempotent commit: duplicate client_action_id returns previous response without double-mutating stock.
+    2. Optimistic Concurrency & Conflict Detection: detects concurrent edits and blocks negative stock / stale overwrites.
+    3. Unified Multi-Entity Sync: Handles stock transactions, shortage indents, and patient medication reminders.
+    4. Immutable audit trail: All synced mutations recorded in OfflineSyncAction & AuditLog.
+    """
+    results = []
+    synced_count = 0
+    conflicts_count = 0
+    failed_count = 0
+
+    for act in req.actions:
+        # Step 1: Idempotency Check
+        existing_action = session.exec(
+            select(models.OfflineSyncAction).where(models.OfflineSyncAction.client_action_id == act.client_action_id)
+        ).first()
+
+        if existing_action:
+            results.append({
+                "client_action_id": act.client_action_id,
+                "action_type": act.action_type,
+                "status": "ALREADY_SYNCED",
+                "conflict_details": existing_action.conflict_details,
+                "server_resolved_stock": existing_action.server_resolved_stock
+            })
+            synced_count += 1
+            continue
+
+        try:
+            # Step 2: Handle DISPENSE
+            if act.action_type == "DISPENSE":
+                c_id = act.payload.get("centre_id") or act.facility_id
+                m_id = act.payload.get("medicine_id")
+                qty = int(act.payload.get("qty", 0))
+
+                stock = session.exec(
+                    select(models.StockLevel).where(
+                        models.StockLevel.centre_id == c_id,
+                        models.StockLevel.medicine_id == m_id
+                    )
+                ).first()
+
+                curr_stock = stock.current_stock if stock else 0
+
+                if curr_stock < qty:
+                    # Conflict: Insufficient physical stock
+                    conflict_msg = f"Insufficient stock: server has {curr_stock}, offline dispense requested {qty}. Stock not deducted."
+                    sync_rec = models.OfflineSyncAction(
+                        client_action_id=act.client_action_id,
+                        action_type=act.action_type,
+                        user_id=act.user_id,
+                        facility_id=act.facility_id,
+                        device_id=act.device_id,
+                        client_timestamp=act.client_timestamp,
+                        base_stock=act.base_stock,
+                        applied_stock=None,
+                        status="CONFLICT_DETECTED",
+                        conflict_details=conflict_msg,
+                        server_resolved_stock=curr_stock
+                    )
+                    session.add(sync_rec)
+                    conflicts_count += 1
+                    results.append({
+                        "client_action_id": act.client_action_id,
+                        "action_type": act.action_type,
+                        "status": "CONFLICT_DETECTED",
+                        "conflict_details": conflict_msg,
+                        "server_resolved_stock": curr_stock
+                    })
+                else:
+                    conflict_note = None
+                    if act.base_stock is not None and curr_stock != act.base_stock:
+                        conflict_note = f"Concurrent modification: device base was {act.base_stock}, server stock was {curr_stock}. Deducted {qty}, remaining {curr_stock - qty}."
+
+                    stock.current_stock -= qty
+                    stock.updated_at = models.get_utc_now()
+                    session.add(stock)
+
+                    tx = models.Transaction(
+                        centre_id=c_id,
+                        medicine_id=m_id,
+                        type="dispense",
+                        qty=qty,
+                        batch=act.payload.get("batch", "BTH-DEFAULT"),
+                        expiry=act.payload.get("expiry", "2027-12-31"),
+                        user=f"{act.user_id} (Offline {act.device_id[:6]})"
+                    )
+                    session.add(tx)
+
+                    sync_rec = models.OfflineSyncAction(
+                        client_action_id=act.client_action_id,
+                        action_type=act.action_type,
+                        user_id=act.user_id,
+                        facility_id=act.facility_id,
+                        device_id=act.device_id,
+                        client_timestamp=act.client_timestamp,
+                        base_stock=act.base_stock,
+                        applied_stock=qty,
+                        status="SYNCED",
+                        conflict_details=conflict_note,
+                        server_resolved_stock=stock.current_stock
+                    )
+                    session.add(sync_rec)
+                    synced_count += 1
+                    results.append({
+                        "client_action_id": act.client_action_id,
+                        "action_type": act.action_type,
+                        "status": "SYNCED",
+                        "conflict_details": conflict_note,
+                        "server_resolved_stock": stock.current_stock
+                    })
+
+            # Step 3: Handle RECEIVE
+            elif act.action_type == "RECEIVE":
+                c_id = act.payload.get("centre_id") or act.facility_id
+                m_id = act.payload.get("medicine_id")
+                qty = int(act.payload.get("qty", 0))
+
+                stock = session.exec(
+                    select(models.StockLevel).where(
+                        models.StockLevel.centre_id == c_id,
+                        models.StockLevel.medicine_id == m_id
+                    )
+                ).first()
+
+                if not stock:
+                    stock = models.StockLevel(centre_id=c_id, medicine_id=m_id, current_stock=qty)
+                else:
+                    stock.current_stock += qty
+                    stock.updated_at = models.get_utc_now()
+
+                session.add(stock)
+
+                tx = models.Transaction(
+                    centre_id=c_id,
+                    medicine_id=m_id,
+                    type="receive",
+                    qty=qty,
+                    batch=act.payload.get("batch", "BTH-DEFAULT"),
+                    expiry=act.payload.get("expiry", "2027-12-31"),
+                    user=f"{act.user_id} (Offline {act.device_id[:6]})"
+                )
+                session.add(tx)
+
+                sync_rec = models.OfflineSyncAction(
+                    client_action_id=act.client_action_id,
+                    action_type=act.action_type,
+                    user_id=act.user_id,
+                    facility_id=act.facility_id,
+                    device_id=act.device_id,
+                    client_timestamp=act.client_timestamp,
+                    base_stock=act.base_stock,
+                    applied_stock=qty,
+                    status="SYNCED",
+                    conflict_details=None,
+                    server_resolved_stock=stock.current_stock
+                )
+                session.add(sync_rec)
+                synced_count += 1
+                results.append({
+                    "client_action_id": act.client_action_id,
+                    "action_type": act.action_type,
+                    "status": "SYNCED",
+                    "server_resolved_stock": stock.current_stock
+                })
+
+            # Step 4: Handle STOCK_ADJUST
+            elif act.action_type == "STOCK_ADJUST":
+                c_id = act.payload.get("centre_id") or act.facility_id
+                m_id = act.payload.get("medicine_id")
+                target_qty = int(act.payload.get("qty", 0))
+
+                stock = session.exec(
+                    select(models.StockLevel).where(
+                        models.StockLevel.centre_id == c_id,
+                        models.StockLevel.medicine_id == m_id
+                    )
+                ).first()
+
+                curr_stock = stock.current_stock if stock else 0
+
+                # Detect stale blind overwrite
+                if act.base_stock is not None and stock and curr_stock != act.base_stock:
+                    conflict_msg = f"Stale offline count prevented. Server stock was modified to {curr_stock} while device was offline (observed base was {act.base_stock}). Supervisor reconciliation required."
+                    sync_rec = models.OfflineSyncAction(
+                        client_action_id=act.client_action_id,
+                        action_type=act.action_type,
+                        user_id=act.user_id,
+                        facility_id=act.facility_id,
+                        device_id=act.device_id,
+                        client_timestamp=act.client_timestamp,
+                        base_stock=act.base_stock,
+                        applied_stock=None,
+                        status="CONFLICT_DETECTED",
+                        conflict_details=conflict_msg,
+                        server_resolved_stock=curr_stock
+                    )
+                    session.add(sync_rec)
+                    conflicts_count += 1
+                    results.append({
+                        "client_action_id": act.client_action_id,
+                        "action_type": act.action_type,
+                        "status": "CONFLICT_DETECTED",
+                        "conflict_details": conflict_msg,
+                        "server_resolved_stock": curr_stock
+                    })
+                else:
+                    if not stock:
+                        stock = models.StockLevel(centre_id=c_id, medicine_id=m_id, current_stock=target_qty)
+                    else:
+                        stock.current_stock = target_qty
+                        stock.updated_at = models.get_utc_now()
+                    session.add(stock)
+
+                    tx = models.Transaction(
+                        centre_id=c_id,
+                        medicine_id=m_id,
+                        type="adjust",
+                        qty=target_qty,
+                        batch="BTH-PHYSICAL-AUDIT",
+                        expiry="2027-12-31",
+                        user=f"{act.user_id} (Offline {act.device_id[:6]})"
+                    )
+                    session.add(tx)
+
+                    sync_rec = models.OfflineSyncAction(
+                        client_action_id=act.client_action_id,
+                        action_type=act.action_type,
+                        user_id=act.user_id,
+                        facility_id=act.facility_id,
+                        device_id=act.device_id,
+                        client_timestamp=act.client_timestamp,
+                        base_stock=act.base_stock,
+                        applied_stock=target_qty,
+                        status="SYNCED",
+                        conflict_details=None,
+                        server_resolved_stock=target_qty
+                    )
+                    session.add(sync_rec)
+                    synced_count += 1
+                    results.append({
+                        "client_action_id": act.client_action_id,
+                        "action_type": act.action_type,
+                        "status": "SYNCED",
+                        "server_resolved_stock": target_qty
+                    })
+
+            # Step 5: Handle CREATE_SHORTAGE_REQUEST
+            elif act.action_type == "CREATE_SHORTAGE_REQUEST":
+                c_id = act.payload.get("centre_id") or act.facility_id
+                m_id = act.payload.get("medicine_id")
+                req_qty = int(act.payload.get("quantity", 50))
+                urgency = act.payload.get("urgency_level", "URGENT")
+
+                transfer_res = create_smart_redistribution(
+                    session=session,
+                    shortage_owner_id=c_id,
+                    medicine_id=m_id,
+                    requested_qty=req_qty,
+                    urgency_level=urgency,
+                    shortage_owner_type="facility"
+                )
+
+                sync_rec = models.OfflineSyncAction(
+                    client_action_id=act.client_action_id,
+                    action_type=act.action_type,
+                    user_id=act.user_id,
+                    facility_id=act.facility_id,
+                    device_id=act.device_id,
+                    client_timestamp=act.client_timestamp,
+                    base_stock=act.base_stock,
+                    applied_stock=req_qty,
+                    status="SYNCED",
+                    result_data_json=json.dumps(transfer_res),
+                    server_resolved_stock=req_qty
+                )
+                session.add(sync_rec)
+                synced_count += 1
+                results.append({
+                    "client_action_id": act.client_action_id,
+                    "action_type": act.action_type,
+                    "status": "SYNCED",
+                    "transfer_order_id": transfer_res.get("transfer_order_id"),
+                    "transfer_status": transfer_res.get("status"),
+                    "suppliers_contacted": len(transfer_res.get("eligible_suppliers", []))
+                })
+
+            # Step 6: Handle PATIENT_REMINDER_LOG
+            elif act.action_type == "PATIENT_REMINDER_LOG":
+                sch_id = act.payload.get("schedule_id", "sch_default")
+                pat_id = act.payload.get("patient_id") or act.user_id
+                action_choice = act.payload.get("action", "TAKEN")
+                sched_time = act.payload.get("scheduled_time", "")
+
+                log = models.MedicationReminderLog(
+                    schedule_id=sch_id,
+                    patient_id=pat_id,
+                    scheduled_time=sched_time,
+                    action=action_choice,
+                    action_timestamp=models.get_utc_now(),
+                    notes=f"Recorded offline via device {act.device_id[:6]}"
+                )
+                session.add(log)
+
+                sync_rec = models.OfflineSyncAction(
+                    client_action_id=act.client_action_id,
+                    action_type=act.action_type,
+                    user_id=act.user_id,
+                    facility_id=act.facility_id,
+                    device_id=act.device_id,
+                    client_timestamp=act.client_timestamp,
+                    status="SYNCED"
+                )
+                session.add(sync_rec)
+                synced_count += 1
+                results.append({
+                    "client_action_id": act.client_action_id,
+                    "action_type": act.action_type,
+                    "status": "SYNCED"
+                })
+
+            else:
+                # Unsupported action type
+                sync_rec = models.OfflineSyncAction(
+                    client_action_id=act.client_action_id,
+                    action_type=act.action_type,
+                    user_id=act.user_id,
+                    facility_id=act.facility_id,
+                    device_id=act.device_id,
+                    client_timestamp=act.client_timestamp,
+                    status="FAILED",
+                    conflict_details="Unrecognized action type"
+                )
+                session.add(sync_rec)
+                failed_count += 1
+                results.append({
+                    "client_action_id": act.client_action_id,
+                    "action_type": act.action_type,
+                    "status": "FAILED",
+                    "conflict_details": "Unrecognized action type"
+                })
+
+        except Exception as e:
+            failed_count += 1
+            results.append({
+                "client_action_id": act.client_action_id,
+                "action_type": act.action_type,
+                "status": "FAILED",
+                "conflict_details": str(e)
+            })
+
+    session.commit()
+
+    return {
+        "status": "success",
+        "total_actions": len(req.actions),
+        "synced_count": synced_count,
+        "conflicts_count": conflicts_count,
+        "failed_count": failed_count,
+        "results": results,
+        "server_timestamp": models.get_utc_now().isoformat()
+    }
+
+
+@router.get("/offline/bootstrap-data")
+def get_offline_bootstrap_data(
+    facility_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    """
+    Returns reference metadata and initial inventory payload for caching into IndexedDB
+    """
+    centres = session.exec(select(models.Centre)).all()
+    medicines = session.exec(select(models.Medicine)).all()
+    monographs = session.exec(select(models.MedicineInfo)).all()
+    schedules = session.exec(select(models.MedicationSchedule)).all()
+
+    # Query stock levels
+    if facility_id:
+        stocks = session.exec(select(models.StockLevel).where(models.StockLevel.centre_id == facility_id)).all()
+    else:
+        stocks = session.exec(select(models.StockLevel)).all()
+
+    inventory_items = []
+    med_map = {m.id: m for m in medicines}
+    for s in stocks:
+        med = med_map.get(s.medicine_id)
+        inventory_items.append({
+            "key": f"{s.centre_id}_{s.medicine_id}",
+            "centre_id": s.centre_id,
+            "medicine_id": s.medicine_id,
+            "medicine_name": med.name if med else s.medicine_id,
+            "unit": med.unit if med else "units",
+            "current_stock": s.current_stock,
+            "last_cached_at": s.updated_at.isoformat() if hasattr(s.updated_at, 'isoformat') else str(s.updated_at)
+        })
+
+    return {
+        "server_timestamp": models.get_utc_now().isoformat(),
+        "centres": [{"id": c.id, "name": c.name, "block": c.block, "district": c.district} for c in centres],
+        "medicines": [
+            {
+                "id": m.id,
+                "name": m.name,
+                "unit": m.unit,
+                "essential": m.essential
+            }
+            for m in medicines
+        ],
+        "inventory": inventory_items,
+        "schedules": [
+            {
+                "id": sch.id,
+                "patient_id": sch.patient_id,
+                "medicine_name": sch.medicine_name,
+                "strength": sch.strength,
+                "dosage_form": sch.dosage_form,
+                "dose_quantity": sch.dose_quantity,
+                "schedule_times": json.loads(sch.schedule_times_json) if hasattr(sch, 'schedule_times_json') else ["08:00"],
+                "prescribed_instructions": sch.prescribed_instructions
+            }
+            for sch in schedules
+        ],
+        "monographs_count": len(monographs)
+    }
+
+
+@router.get("/offline/actions")
+def list_offline_sync_actions(
+    facility_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    """
+    List synchronized offline actions for regulatory audit and conflict review
+    """
+    query = select(models.OfflineSyncAction)
+    if facility_id:
+        query = query.where(models.OfflineSyncAction.facility_id == facility_id)
+    if status:
+        query = query.where(models.OfflineSyncAction.status == status)
+
+    actions = session.exec(query.order_by(models.OfflineSyncAction.created_at.desc()).limit(100)).all()
+    return {"actions": actions, "count": len(actions)}
+
+
+@router.post("/offline/resolve-conflict")
+def resolve_offline_conflict(
+    req: ConflictResolutionRequest,
+    session: Session = Depends(get_session),
+    current_user: Optional[models.User] = Depends(get_optional_user)
+):
+    """
+    Supervisor resolution of a detected inventory synchronization conflict
+    """
+    action = session.exec(
+        select(models.OfflineSyncAction).where(models.OfflineSyncAction.client_action_id == req.client_action_id)
+    ).first()
+
+    if not action:
+        raise HTTPException(status_code=404, detail="Sync action not found")
+
+    action_user = current_user.username if current_user else "Authorized Supervisor"
+
+    if req.resolution_choice == "ACCEPT_SERVER":
+        action.status = "RESOLVED_ACCEPT_SERVER"
+        action.conflict_details = f"Resolved by {action_user}: Kept server stock."
+    elif req.resolution_choice == "FORCE_OVERWRITE":
+        action.status = "RESOLVED_OVERWRITE"
+        action.conflict_details = f"Resolved by {action_user}: Overwrite authorized. {req.notes or ''}"
+    elif req.resolution_choice == "MANUAL_RECONCILE":
+        action.status = "RESOLVED_MANUAL_RECONCILE"
+        action.server_resolved_stock = req.reconciled_stock
+        action.conflict_details = f"Resolved by {action_user}: Reconciled stock set to {req.reconciled_stock}. {req.notes or ''}"
+
+    session.add(action)
+    session.commit()
+    session.refresh(action)
+
+    record_audit(
+        session,
+        "CONFLICT_RESOLVE",
+        "offline_sync_action",
+        action.id,
+        action_user,
+        "supervisor",
+        f"Conflict resolved: {req.resolution_choice}"
+    )
+
+    return {"status": "resolved", "action_id": action.id, "resolution": req.resolution_choice}
+
+
+

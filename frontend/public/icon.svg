@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0F6B6B" />
+  <!-- Medical Cross -->
+  <rect x="220" y="144" width="72" height="224" rx="16" fill="#FFFFFF" />
+  <rect x="144" y="220" width="224" height="72" rx="16" fill="#FFFFFF" />
+  <!-- Heartbeat ECG Pulse in Coral -->
+  <path d="M 140 256 L 195 256 L 225 184 L 268 336 L 302 216 L 328 256 L 372 256" 
+        fill="none" stroke="#EF6C00" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

@@ -10,7 +10,8 @@ import {
   RefreshCw,
   LogOut,
   LogIn,
-  User
+  User,
+  Download
 } from 'lucide-react';
 import { UserRole, AuthUser } from '../types';
 import { translations, Language } from '../i18n';
@@ -31,6 +32,9 @@ interface TopNavProps {
   currentUser?: AuthUser | null;
   onLogout?: () => void;
   onOpenLogin?: () => void;
+  onOpenQueueModal?: () => void;
+  canInstallPWA?: boolean;
+  onInstallPWA?: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -48,7 +52,10 @@ export const TopNav: React.FC<TopNavProps> = ({
   isSimulating,
   currentUser,
   onLogout,
-  onOpenLogin
+  onOpenLogin,
+  onOpenQueueModal,
+  canInstallPWA,
+  onInstallPWA
 }) => {
   const t = translations[lang] || translations.en;
 
@@ -93,28 +100,47 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-2.5">
-        {/* Offline / Online Sync Indicator */}
-        {isOnline ? (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <Wifi size={13} />
-            <span>{t.online_synced || 'Online'}</span>
-            {pendingSyncCount > 0 && (
-              <button
-                onClick={onSyncNow}
-                className="ml-1 px-1.5 py-0.5 rounded-xs bg-emerald-600 text-white font-bold hover:bg-emerald-700 flex items-center gap-1"
-                title="Sync pending queue"
-              >
-                <RefreshCw size={10} className="animate-spin" />
-                <span>Sync {pendingSyncCount}</span>
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-            <WifiOff size={13} />
-            <span>{t.offline_badge || 'Offline'} ({pendingSyncCount})</span>
-          </div>
+        {/* PWA Install Button (Shown on desktop & Android browsers when install prompt is available) */}
+        {canInstallPWA && onInstallPWA && (
+          <button
+            onClick={onInstallPWA}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#0F6B6B] text-white hover:bg-[#0c5555] shadow-xs transition"
+            title="Install StockWatch PHC as Progressive Web App"
+          >
+            <Download size={13} />
+            <span>Install App</span>
+          </button>
         )}
+
+        {/* Offline / Online Sync Indicator — Clickable to open Offline Queue */}
+        <button
+          onClick={onOpenQueueModal}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition cursor-pointer ${
+            isOnline
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+              : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+          }`}
+          title="Click to view offline queue & sync actions"
+        >
+          {isOnline ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <Wifi size={13} />
+              <span>{t.online_synced || 'Online'}</span>
+              {pendingSyncCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-xs bg-emerald-600 text-white font-bold text-[10px]">
+                  {pendingSyncCount} queued
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <WifiOff size={13} />
+              <span>{t.offline_badge || 'Offline'} ({pendingSyncCount})</span>
+            </>
+          )}
+        </button>
 
         {/* Demo Action: Fever Spike */}
         <button

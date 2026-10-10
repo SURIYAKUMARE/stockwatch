@@ -1057,5 +1057,7 @@ def run_seed():
         session.commit()
         print("[OK] Deterministic seed data successfully created for all 6 roles, facilities, pharmacies, and medicines!")
 
+seed_all = run_seed
+
 if __name__ == "__main__":
     run_seed()

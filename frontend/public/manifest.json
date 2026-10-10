@@ -1,21 +1,62 @@
 {
-  "name": "StockWatch PHC — Medicine Stock-Out Early Warning System",
+  "id": "/?source=pwa",
+  "name": "StockWatch PHC — Smart Medicine Network & Early Warning",
   "short_name": "StockWatch PHC",
-  "description": "Medicine stock-out early warning and inter-PHC transfer network optimizer for Primary Health Centres",
-  "start_url": "/",
+  "description": "Intelligent medicine availability, redistribution, and patient assistance platform with offline PWA support for Primary Health Centres and pharmacies.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#F7F9FB",
   "theme_color": "#0F6B6B",
+  "categories": ["medical", "health", "productivity"],
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Search Medicines",
+      "short_name": "Search",
+      "description": "Find medicine prices and nearby pharmacies",
+      "url": "/?action=search",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pharmacist Inventory",
+      "short_name": "Inventory",
+      "description": "Manage pharmacy medicine stock and offline records",
+      "url": "/?action=inventory",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Critical Stock Alerts",
+      "short_name": "Alerts",
+      "description": "View urgent shortage warnings",
+      "url": "/?action=alerts",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
