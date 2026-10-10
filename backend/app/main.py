@@ -15,10 +15,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routes under /api
+# Include API routes under /api and root
 app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
 
 @app.get("/health")
+@app.get("/api/health")
 async def health():
     return {"status": "ok"}
 

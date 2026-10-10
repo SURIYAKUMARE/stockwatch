@@ -147,8 +147,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Parse error from backend
-      let errMsg = 'Invalid credentials.';
+      // If backend responded with non-200 (e.g. 404 on Vercel or 500), check demo fallback first
+      const { DEMO_ACCOUNTS } = await import('../types/auth');
+      const account = DEMO_ACCOUNTS[creds.email.toLowerCase().trim()];
+      const isDemoPw = account && (
+        creds.password === 'demo123' ||
+        creds.password === 'demo1234' ||
+        account.password === creds.password
+      );
+      if (account && isDemoPw) {
+        const { password: _, ...user } = account;
+        const token = `demo_token_${user.id}_${Date.now()}`;
+        saveSession(user, token);
+        setState({ user, token, isAuthenticated: true, isLoading: false, error: null });
+        return;
+      }
+
+      // Parse error from backend for non-demo users
+      let errMsg = res.status === 404 ? 'Service unavailable. Please use one of the quick demo accounts.' : 'Invalid credentials.';
       try {
         const errData = await res.json();
         errMsg = errData.detail || errMsg;
@@ -160,7 +176,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Network offline or backend not running — fall back to demo accounts
       const { DEMO_ACCOUNTS } = await import('../types/auth');
       const account = DEMO_ACCOUNTS[creds.email.toLowerCase().trim()];
-      const isDemoPw = creds.password === 'demo123' || creds.password === 'demo1234' || (account && account.password === creds.password);
+      const isDemoPw = account && (
+        creds.password === 'demo123' ||
+        creds.password === 'demo1234' ||
+        account.password === creds.password
+      );
       if (account && isDemoPw) {
         const { password: _, ...user } = account;
         const token = `demo_token_${user.id}_${Date.now()}`;
