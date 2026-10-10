@@ -5,13 +5,33 @@ from sqlmodel import SQLModel, create_engine, Session
 # When running in Vercel serverless environment, ensure writable SQLite database in /tmp
 if os.getenv("VERCEL") and not os.getenv("DATABASE_URL"):
     tmp_db = "/tmp/stockwatch.db"
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    src_db = os.path.join(repo_root, "stockwatch.db")
-    if not os.path.exists(tmp_db) and os.path.exists(src_db):
-        try:
-            shutil.copyfile(src_db, tmp_db)
-        except Exception:
-            pass
+    backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    repo_root = os.path.abspath(os.path.join(backend_dir, ".."))
+    src_db_candidates = [
+        os.path.join(backend_dir, "stockwatch.db"),
+        os.path.join(repo_root, "stockwatch.db"),
+        os.path.join(os.getcwd(), "stockwatch.db"),
+        os.path.join(os.getcwd(), "backend", "stockwatch.db")
+    ]
+    if not os.path.exists(tmp_db):
+        copied = False
+        for src in src_db_candidates:
+            if os.path.exists(src):
+                try:
+                    shutil.copyfile(src, tmp_db)
+                    copied = True
+                    break
+                except Exception:
+                    pass
+        if not copied:
+            try:
+                DATABASE_URL = f"sqlite:///{tmp_db}"
+                connect_args = {"check_same_thread": False}
+                engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args)
+                from backend.seed import seed_all
+                seed_all()
+            except Exception:
+                pass
     DATABASE_URL = f"sqlite:///{tmp_db}"
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./stockwatch.db")
