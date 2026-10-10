@@ -28,6 +28,8 @@ import { MedicineCatalogue } from './MedicineCatalogue';
 import { AuditLogs } from './AuditLogs';
 import { PharmacistInventory } from './PharmacistInventory';
 import { StateNationalOverview } from './StateNationalOverview';
+import { InventoryManager } from './InventoryManager';
+import { CsvImporter } from './CsvImporter';
 
 interface OfficerDashboardProps {
   activeScreen: AppScreen;
@@ -100,6 +102,11 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
     if (activeScreen === 'inventory' || activeScreen === 'dashboard') {
       return <PharmacistInventory lang={lang} medicines={medicines} isLoading={isLoading} />;
     }
+    if (activeScreen === 'inventory_manager') {
+      // Use demo pharmacy ID from seed data
+      const pharmId = user.scopeId ?? 'pharma_apollo_cbe';
+      return <InventoryManager lang={lang} ownerId={pharmId} ownerType="pharmacy" />;
+    }
     if (activeScreen === 'stock_entry' || activeScreen === 'stock_entry_facility') {
       return (
         <StockEntry
@@ -128,10 +135,18 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
       return <WeeklyReport lang={lang} />;
     }
     if (activeScreen === 'expiry_batches') {
-      return <ExpiryBatchStub lang={lang} />;
+      const pharmId = user.scopeId ?? 'pharma_apollo_cbe';
+      return <InventoryManager lang={lang} ownerId={pharmId} ownerType="pharmacy" />;
     }
     if (activeScreen === 'import_csv') {
-      return <ImportCsvStub lang={lang} />;
+      const pharmId = user.scopeId ?? 'pharma_apollo_cbe';
+      return <CsvImporter lang={lang} ownerId={pharmId} ownerType="pharmacy" />;
+    }
+    if (activeScreen === 'medicine_catalogue') {
+      return <MedicineCatalogue lang={lang} />;
+    }
+    if (activeScreen === 'audit_logs') {
+      return <AuditLogs lang={lang} />;
     }
   }
 

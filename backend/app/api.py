@@ -1115,6 +1115,36 @@ def get_owner_inventory(owner_id: str, session: Session = Depends(get_session)):
         "batches": batches
     }
 
+@router.get("/inventory/{owner_id}/transactions")
+def get_owner_transactions(
+    owner_id: str,
+    limit: int = 50,
+    session: Session = Depends(get_session)
+):
+    """Return recent inventory transactions for a given owner (facility or pharmacy)."""
+    txs = session.exec(
+        select(models.InventoryTransaction)
+        .where(models.InventoryTransaction.owner_id == owner_id)
+        .order_by(models.InventoryTransaction.created_at.desc())
+        .limit(limit)
+    ).all()
+    return [
+        {
+            "id": t.id,
+            "transaction_reference": t.transaction_reference,
+            "medicine_id": t.medicine_id,
+            "transaction_type": t.transaction_type,
+            "quantity": t.quantity,
+            "batch_id": t.batch_id,
+            "source": t.source,
+            "created_by": t.created_by,
+            "reason": t.reason,
+            "idempotency_key": t.idempotency_key,
+            "created_at": t.created_at.isoformat(),
+        }
+        for t in txs
+    ]
+
 @router.post("/inventory/transactions")
 def create_inventory_transaction(
     tx: InventoryTransactionCreate,

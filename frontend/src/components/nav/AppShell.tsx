@@ -36,8 +36,9 @@ export type AppScreen =
   | 'nearby_pharmacies'
   | 'my_enquiries'
   | 'saved_pharmacies'
-  // pharmacist
+  // pharmacist / facility
   | 'inventory'
+  | 'inventory_manager'
   | 'stock_entry'
   | 'expiry_batches'
   | 'import_csv'
