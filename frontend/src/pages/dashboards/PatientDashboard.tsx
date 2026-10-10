@@ -28,9 +28,11 @@ interface DemoPharmacy {
 }
 
 const DEMO_PHARMACIES: DemoPharmacy[] = [
-  { id: 'ph1', name: 'Valparai Medical Store', address: 'Main Road, Valparai, Coimbatore – 642127', distance_km: 0.4, phone: '+91 98765 43210', isVerified: true, lastUpdate: '2 hours ago', dataSource: 'demo' },
-  { id: 'ph2', name: 'Aliyar Pharma', address: 'Aliyar Dam Rd, Anaimalai Block', distance_km: 8.8, phone: '+91 98765 11111', isVerified: true, lastUpdate: '5 hours ago', dataSource: 'demo' },
-  { id: 'ph3', name: 'Pollachi Health Centre Pharmacy', address: 'Nehru St, Pollachi, Coimbatore', distance_km: 14.2, phone: '+91 98765 22222', isVerified: false, lastUpdate: '1 day ago', dataSource: 'demo' },
+  { id: 'ph1', name: 'Valparai Medical Store', address: 'Main Road, Valparai, Coimbatore – 642127', distance_km: 0.4, phone: '+91 98765 43210', isVerified: true, lastUpdate: '20 mins ago', dataSource: 'demo' },
+  { id: 'ph2', name: 'Kovai Medicals — Valparai Hill Top', address: 'Bazaar Jn, Valparai', distance_km: 1.2, phone: '+91 4253 222301', isVerified: true, lastUpdate: '1 hour ago', dataSource: 'demo' },
+  { id: 'ph3', name: 'Aliyar Medical & General Stores', address: 'Aliyar Dam Rd, Anaimalai Block', distance_km: 8.8, phone: '+91 98765 11111', isVerified: true, lastUpdate: '3 hours ago', dataSource: 'demo' },
+  { id: 'ph4', name: 'Thulasi Pharmacies — Pollachi Bazaar', address: 'Nehru St, Pollachi, Coimbatore', distance_km: 14.2, phone: '+91 4259 223450', isVerified: true, lastUpdate: '5 hours ago', dataSource: 'demo' },
+  { id: 'ph5', name: 'Apollo Pharmacy — Coimbatore Central', address: 'Cross Cut Road, Gandhipuram, Coimbatore', distance_km: 42.0, phone: '+91 422 2490111', isVerified: true, lastUpdate: 'Just now', dataSource: 'demo' },
 ];
 
 interface DemoMedAvailability {
@@ -44,10 +46,22 @@ interface DemoMedAvailability {
 }
 
 const DEMO_AVAILABILITY: DemoMedAvailability[] = [
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Paracetamol', strength: '500mg Tablet', qty: 40, freshness: 'recent', price: '₹2/strip' },
-  { pharmacyId: 'ph2', pharmacyName: 'Aliyar Pharma', medicine: 'Paracetamol', strength: '500mg Tablet', qty: 25, freshness: 'stale', price: '₹2/strip' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'ORS Sachets', strength: '20.5g', qty: 120, freshness: 'recent', price: '₹5/sachet' },
-  { pharmacyId: 'ph3', pharmacyName: 'Pollachi HC Pharmacy', medicine: 'Amoxicillin', strength: '250mg Capsule', qty: 0, freshness: 'stale' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Paracetamol', strength: '500mg Tablet', qty: 45, freshness: 'recent', price: '₹2 / strip' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Paracetamol Syrup', strength: '60ml Bottle', qty: 18, freshness: 'recent', price: '₹35 / bottle' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Amoxicillin', strength: '250mg Capsule', qty: 60, freshness: 'recent', price: '₹5 / strip' },
+  { pharmacyId: 'ph3', pharmacyName: 'Aliyar Medical Stores', medicine: 'Amoxicillin', strength: '500mg Capsule', qty: 35, freshness: 'recent', price: '₹8 / strip' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'ORS Sachets', strength: '20.5g WHO Formula', qty: 120, freshness: 'recent', price: '₹5 / sachet' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Zinc Sulfate', strength: '20mg Dispersible Tab', qty: 50, freshness: 'recent', price: '₹3 / strip' },
+  { pharmacyId: 'ph4', pharmacyName: 'Thulasi Pharmacies Pollachi', medicine: 'Metformin', strength: '500mg SR Tablet', qty: 80, freshness: 'recent', price: '₹4 / strip' },
+  { pharmacyId: 'ph3', pharmacyName: 'Aliyar Medical Stores', medicine: 'Iron and Folic Acid', strength: '100mg + 0.5mg Tab', qty: 90, freshness: 'recent', price: 'Free Govt Supply' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Cetirizine', strength: '10mg Tablet', qty: 40, freshness: 'recent', price: '₹2 / strip' },
+  { pharmacyId: 'ph2', pharmacyName: 'Kovai Medicals Valparai', medicine: 'Albendazole', strength: '400mg Chewable Tab', qty: 30, freshness: 'recent', price: '₹6 / tablet' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Anti-Snake Venom', strength: 'Polyvalent 10ml Inj', qty: 8, freshness: 'recent', price: 'Govt Emergency Supply' },
+  { pharmacyId: 'ph4', pharmacyName: 'Thulasi Pharmacies Pollachi', medicine: 'Anti-Rabies Vaccine', strength: '0.5ml IM / ID Vial', qty: 12, freshness: 'recent', price: 'Govt Subsidized' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Amlodipine', strength: '5mg Tablet', qty: 65, freshness: 'recent', price: '₹3 / strip' },
+  { pharmacyId: 'ph3', pharmacyName: 'Aliyar Medical Stores', medicine: 'Azithromycin', strength: '500mg Tablet', qty: 28, freshness: 'recent', price: '₹12 / strip' },
+  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Salbutamol Inhaler', strength: '100mcg (200 doses)', qty: 14, freshness: 'recent', price: '₹110 / inhaler' },
+  { pharmacyId: 'ph4', pharmacyName: 'Thulasi Pharmacies Pollachi', medicine: 'Atropine Sulfate', strength: '0.6mg/ml Injection', qty: 0, freshness: 'stale', price: 'Out of Stock' },
 ];
 
 const FRESHNESS_LABEL: Record<string, { label: string; color: string }> = {
@@ -106,11 +120,36 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   }
 
   if (activeScreen === 'my_enquiries') {
+    const demoEnquiries = [
+      { id: 'enq-01', medicine: 'Paracetamol 500mg (2 strips)', pharmacy: 'Valparai Medical Store', status: 'CONFIRMED', time: 'Today, 10:30 AM', note: 'Reserved at front counter for pickup. Pharmacist verified stock.' },
+      { id: 'enq-02', medicine: 'Salbutamol Inhaler (1 inhaler)', pharmacy: 'Valparai Medical Store', status: 'COMPLETED', time: 'Yesterday, 4:15 PM', note: 'Collected successfully by patient.' },
+      { id: 'enq-03', medicine: 'Amoxicillin 250mg (1 strip)', pharmacy: 'Thulasi Pharmacies Pollachi', status: 'PENDING', time: 'Today, 2:00 PM', note: 'Waiting for pharmacist stock confirmation.' },
+    ];
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-4">
         <h2 className="text-base font-bold text-[#14202B]">{isTa ? 'என் கேள்விகள்' : 'My Previous Enquiries'}</h2>
-        <div className="bg-white border border-[#E3E8EE] rounded-xl p-8 text-center text-xs text-[#5B6B7A]">
-          No past enquiries. Search for a medicine to send an availability request.
+        <div className="space-y-3">
+          {demoEnquiries.map(e => (
+            <div key={e.id} className="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-[#14202B]">{e.medicine}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  e.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                  e.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                  'bg-amber-100 text-amber-700 border border-amber-200'
+                }`}>
+                  {e.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-[#5B6B7A]">
+                <span className="font-semibold text-[#0F6B6B]">{e.pharmacy}</span>
+                <span>{e.time}</span>
+              </div>
+              <div className="text-[11px] text-[#5B6B7A] bg-[#F7F9FB] rounded-lg p-2 border border-[#E3E8EE]">
+                ℹ {e.note}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

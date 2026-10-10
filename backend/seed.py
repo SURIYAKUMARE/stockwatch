@@ -112,6 +112,7 @@ def run_seed():
             ("pharma_apollo_cbe", "PHARM-CBE-01", "Apollo Pharmacy — Gandhipuram", "Cross Cut Road, Gandhipuram, Coimbatore", 10.9980, 76.9650, "TN-CBE-2021-9981", "+91 422 2490111", "VERIFIED_PHARMACY"),
             ("pharma_medplus_rs_puram", "PHARM-CBE-02", "MedPlus Pharmacy — RS Puram", "DB Road, RS Puram, Coimbatore", 11.0060, 76.9490, "TN-CBE-2022-4412", "+91 422 2548899", "VERIFIED_PHARMACY"),
             ("pharma_thulasi_pollachi", "PHARM-POL-01", "Thulasi Pharmacies — Pollachi Bazaar", "Bazaar Street, Pollachi", 10.6620, 77.0080, "TN-POL-2019-1102", "+91 4259 223450", "VERIFIED_PHARMACY"),
+            ("pharma_valparai_01", "PHARM-VAL-02", "Valparai Medical Store", "Main Road, Valparai, Coimbatore – 642127", 10.3265, 76.9585, "TN-VAL-2021-0142", "+91 98765 43210", "VERIFIED_PHARMACY"),
             ("pharma_kovai_valparai", "PHARM-VAL-01", "Kovai Medicals — Valparai Hill Top", "Main Road, Valparai", 10.3260, 76.9580, "TN-VAL-2020-0091", "+91 4253 222301", "MANUALLY_REPORTED"),
             ("pharma_aliyar_retail", "PHARM-ALI-01", "Aliyar Medical & General Stores", "Aliyar Dam Junction, Aliyar Nagar", 10.4040, 76.9730, "TN-POL-2023-8874", "+91 4259 288102", "VERIFIED_PHARMACY"),
         ]
@@ -250,7 +251,7 @@ def run_seed():
         pw_hash = hash_password("demo123")
         users = [
             User(id="user_patient", username="patient_demo", name="Senthil Kumar (Patient)", email="patient@demo.tn.gov.in", password_hash=pw_hash, role="patient"),
-            User(id="user_pharma", username="pharma_demo", name="K. Ramesh (Pharmacist)", email="pharmacist@demo.tn.gov.in", password_hash=pw_hash, role="pharmacist", centre_id=None),
+            User(id="user_pharma", username="pharma_demo", name="Suresh Pharmacist (Valparai Medical Store)", email="pharmacist@demo.tn.gov.in", password_hash=pw_hash, role="pharmacist", centre_id=None),
             User(id="user_chc", username="chc_demo", name="Dr. Anitha (Medical Officer, CHC Pollachi)", email="chc@demo.tn.gov.in", password_hash=pw_hash, role="chc_facility", centre_id="chc_pollachi"),
             User(id="user_district", username="district_demo", name="Dr. Rajesh (District Health Officer, Coimbatore)", email="district@demo.tn.gov.in", password_hash=pw_hash, role="district_officer", centre_id=None),
             User(id="user_state", username="state_demo", name="Dr. Meenakshi (State Health Officer, Tamil Nadu)", email="state@demo.tn.gov.in", password_hash=pw_hash, role="state_officer", centre_id=None),
@@ -265,7 +266,7 @@ def run_seed():
 
         scopes = [
             UserScope(user_id="user_patient", state_id="TN", district_id="coimbatore"),
-            UserScope(user_id="user_pharma", state_id="TN", district_id="coimbatore", pharmacy_id="pharma_apollo_cbe"),
+            UserScope(user_id="user_pharma", state_id="TN", district_id="coimbatore", pharmacy_id="pharma_valparai_01"),
             UserScope(user_id="user_chc", state_id="TN", district_id="coimbatore", facility_id="chc_pollachi"),
             UserScope(user_id="user_district", state_id="TN", district_id="coimbatore"),
             UserScope(user_id="user_state", state_id="TN"),
@@ -423,13 +424,29 @@ def run_seed():
         # Seed Pharmacy Inventory Balances (Apollo, MedPlus, Thulasi, etc.)
         for pid, _, _, _, _, _, _, _, _ in pharmacies_data:
             for mid, _, _, _, _, _, _, _ in medicines_data:
-                p_qty = random.randint(20, 85)
-                # Apollo has 40 strips PCM, MedPlus has 25 strips PCM
-                if pid == "pharma_apollo_cbe" and mid == "med_pcm":
+                p_qty = random.randint(25, 85)
+                batch_exp = "2028-06-30"
+
+                if pid == "pharma_valparai_01":
+                    if mid == "med_atropine":
+                        p_qty = 0 # Zero stock showcase!
+                    elif mid == "med_salbutamol":
+                        p_qty = 14
+                        batch_exp = (today + timedelta(days=18)).isoformat() # Near-expiry warning (18 days)
+                    elif mid == "med_pcm_syr":
+                        p_qty = 18
+                        batch_exp = (today + timedelta(days=45)).isoformat() # Near-expiry warning (45 days)
+                    elif mid == "med_amox":
+                        p_qty = 60
+                    elif mid == "med_pcm":
+                        p_qty = 45
+                    elif mid == "med_ors":
+                        p_qty = 120
+                elif pid == "pharma_apollo_cbe" and mid == "med_pcm":
                     p_qty = 40
                 elif pid == "pharma_medplus_rs_puram" and mid == "med_pcm":
                     p_qty = 25
-                elif pid == "pharma_valparai_hill" and mid == "med_pcm_syr":
+                elif pid == "pharma_kovai_valparai" and mid == "med_pcm_syr":
                     p_qty = 15
 
                 pib = InventoryBalance(
@@ -444,8 +461,8 @@ def run_seed():
                     owner_type="pharmacy",
                     owner_id=pid,
                     medicine_id=mid,
-                    batch_number=f"BTH-RETAIL-{mid[:6].upper()}",
-                    expiry_date="2028-06-30",
+                    batch_number=f"BTH-{pid[:6].upper()}-{mid[-3:].upper()}",
+                    expiry_date=batch_exp,
                     received_quantity=p_qty + 20,
                     current_quantity=p_qty,
                     supplier_name="Authorized Distributor"

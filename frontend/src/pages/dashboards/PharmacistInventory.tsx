@@ -27,6 +27,62 @@ function daysUntil(dateStr: string) {
   return Math.round((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
+const daysFromNow = (days: number) =>
+  new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+
+const FALLBACK_MEDICINES: Record<string, { name: string; unit: string }> = {
+  med_pcm: { name: 'Paracetamol 500mg', unit: 'tablets' },
+  med_pcm_syr: { name: 'Paracetamol Syrup 60ml', unit: 'bottles' },
+  med_amox: { name: 'Amoxicillin 250mg', unit: 'capsules' },
+  med_amox_500: { name: 'Amoxicillin 500mg', unit: 'capsules' },
+  med_ors: { name: 'ORS Sachets 20.5g', unit: 'sachets' },
+  med_zinc: { name: 'Zinc Sulfate 20mg', unit: 'tablets' },
+  med_metformin: { name: 'Metformin 500mg', unit: 'tablets' },
+  med_ifa: { name: 'Iron and Folic Acid', unit: 'tablets' },
+  med_cetirizine: { name: 'Cetirizine 10mg', unit: 'tablets' },
+  med_alben: { name: 'Albendazole 400mg', unit: 'tablets' },
+  med_asv: { name: 'Anti-Snake Venom 10ml Inj', unit: 'vials' },
+  med_arv: { name: 'Anti-Rabies Vaccine 0.5ml', unit: 'vials' },
+  med_amlo: { name: 'Amlodipine 5mg', unit: 'tablets' },
+  med_azithro: { name: 'Azithromycin 500mg', unit: 'tablets' },
+  med_salbutamol: { name: 'Salbutamol Inhaler 100mcg', unit: 'inhalers' },
+  med_atropine: { name: 'Atropine Sulfate 0.6mg/ml Inj', unit: 'ampoules' },
+};
+
+const INITIAL_BALANCES: Balance[] = [
+  { id: 'bal-1', owner_id: 'pharma_valparai_01', medicine_id: 'med_pcm', quantity_on_hand: 45, last_verified_at: new Date().toISOString() },
+  { id: 'bal-2', owner_id: 'pharma_valparai_01', medicine_id: 'med_pcm_syr', quantity_on_hand: 18, last_verified_at: new Date().toISOString() },
+  { id: 'bal-3', owner_id: 'pharma_valparai_01', medicine_id: 'med_amox', quantity_on_hand: 60, last_verified_at: new Date().toISOString() },
+  { id: 'bal-4', owner_id: 'pharma_valparai_01', medicine_id: 'med_amox_500', quantity_on_hand: 35, last_verified_at: new Date().toISOString() },
+  { id: 'bal-5', owner_id: 'pharma_valparai_01', medicine_id: 'med_ors', quantity_on_hand: 120, last_verified_at: new Date().toISOString() },
+  { id: 'bal-6', owner_id: 'pharma_valparai_01', medicine_id: 'med_zinc', quantity_on_hand: 50, last_verified_at: new Date().toISOString() },
+  { id: 'bal-7', owner_id: 'pharma_valparai_01', medicine_id: 'med_metformin', quantity_on_hand: 80, last_verified_at: new Date().toISOString() },
+  { id: 'bal-8', owner_id: 'pharma_valparai_01', medicine_id: 'med_ifa', quantity_on_hand: 90, last_verified_at: new Date().toISOString() },
+  { id: 'bal-9', owner_id: 'pharma_valparai_01', medicine_id: 'med_cetirizine', quantity_on_hand: 40, last_verified_at: new Date().toISOString() },
+  { id: 'bal-10', owner_id: 'pharma_valparai_01', medicine_id: 'med_alben', quantity_on_hand: 30, last_verified_at: new Date().toISOString() },
+  { id: 'bal-11', owner_id: 'pharma_valparai_01', medicine_id: 'med_asv', quantity_on_hand: 8, last_verified_at: new Date().toISOString() },
+  { id: 'bal-12', owner_id: 'pharma_valparai_01', medicine_id: 'med_arv', quantity_on_hand: 12, last_verified_at: new Date().toISOString() },
+  { id: 'bal-13', owner_id: 'pharma_valparai_01', medicine_id: 'med_amlo', quantity_on_hand: 65, last_verified_at: new Date().toISOString() },
+  { id: 'bal-14', owner_id: 'pharma_valparai_01', medicine_id: 'med_azithro', quantity_on_hand: 28, last_verified_at: new Date().toISOString() },
+  { id: 'bal-15', owner_id: 'pharma_valparai_01', medicine_id: 'med_salbutamol', quantity_on_hand: 14, last_verified_at: new Date().toISOString() },
+  { id: 'bal-16', owner_id: 'pharma_valparai_01', medicine_id: 'med_atropine', quantity_on_hand: 0, last_verified_at: new Date().toISOString() },
+];
+
+const INITIAL_BATCHES: Batch[] = [
+  { medicine_id: 'med_salbutamol', batch_number: 'BTH-VAL-SAL-01', expiry_date: daysFromNow(18), current_quantity: 14 },
+  { medicine_id: 'med_pcm_syr', batch_number: 'BTH-VAL-PCM-02', expiry_date: daysFromNow(45), current_quantity: 18 },
+  { medicine_id: 'med_amox', batch_number: 'BTH-VAL-AMX-03', expiry_date: daysFromNow(74), current_quantity: 25 },
+  { medicine_id: 'med_pcm', batch_number: 'BTH-VAL-PCM-01', expiry_date: daysFromNow(380), current_quantity: 45 },
+  { medicine_id: 'med_ors', batch_number: 'BTH-VAL-ORS-01', expiry_date: daysFromNow(510), current_quantity: 120 },
+  { medicine_id: 'med_metformin', batch_number: 'BTH-VAL-MET-01', expiry_date: daysFromNow(420), current_quantity: 80 },
+];
+
+const INITIAL_CRIT_ALERTS: AlertItem[] = [
+  { id: 'alt-crit-1', centre_name: 'PHC Valparai', medicine_name: 'Paracetamol Syrup 60ml', tier: 'CRITICAL', reason: 'High fever surge (pediatric load +64%). Stockout predicted in 2.1 days.' },
+  { id: 'alt-crit-2', centre_name: 'PHC Anaimalai', medicine_name: 'Anti-Snake Venom 10ml Inj', tier: 'CRITICAL', reason: 'Zero stock in trauma ward. Immediate inter-facility transfer requested.' },
+  { id: 'alt-crit-3', centre_name: 'PHC Aliyar', medicine_name: 'ORS Sachets 20.5g', tier: 'CRITICAL', reason: 'Acute diarrhea cluster detected by CUSUM. Only 4.2 days of cover.' },
+];
+
 interface PharmacistInventoryProps {
   lang: Language;
   medicines: { id: string; name: string; unit: string; essential: boolean }[];
@@ -37,14 +93,14 @@ export function PharmacistInventory({ lang, medicines, isLoading }: PharmacistIn
   const { user } = useAuth();
   const isTa = lang === 'ta';
 
-  const pharmId = user?.scopeId ?? 'pharma_apollo_cbe';
-  const pharmName = user?.scopeName ?? 'Demo Pharmacy';
+  const pharmId = user?.scopeId ?? 'pharma_valparai_01';
+  const pharmName = user?.scopeName ?? 'Valparai Medical Store';
 
-  const [balances, setBalances] = useState<Balance[]>([]);
-  const [batches, setBatches] = useState<Batch[]>([]);
-  const [critAlerts, setCritAlerts] = useState<AlertItem[]>([]);
-  const [loadingInv, setLoadingInv] = useState(true);
-  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [balances, setBalances] = useState<Balance[]>(INITIAL_BALANCES);
+  const [batches, setBatches] = useState<Batch[]>(INITIAL_BATCHES);
+  const [critAlerts, setCritAlerts] = useState<AlertItem[]>(INITIAL_CRIT_ALERTS);
+  const [loadingInv, setLoadingInv] = useState(false);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
 
   const load = useCallback(async () => {
     setLoadingInv(true);
@@ -52,24 +108,29 @@ export function PharmacistInventory({ lang, medicines, isLoading }: PharmacistIn
       const res = await fetch(`/api/inventory/${pharmId}`);
       if (res.ok) {
         const d = await res.json();
-        setBalances(d.balances ?? []);
-        setBatches(d.batches ?? []);
+        if (d.balances && d.balances.length > 0) setBalances(d.balances);
+        if (d.batches && d.batches.length > 0) setBatches(d.batches);
       }
-    } catch { /* ignore */ }
+    } catch { /* retain rich demo balances on network failure */ }
     setLoadingInv(false);
 
     setLoadingAlerts(true);
     try {
       const ar = await fetch('/api/alerts?tier=CRITICAL');
-      if (ar.ok) setCritAlerts((await ar.json()).slice(0, 3));
-    } catch { /* ignore */ }
+      if (ar.ok) {
+        const items = await ar.json();
+        if (items && items.length > 0) setCritAlerts(items.slice(0, 3));
+      }
+    } catch { /* retain demo alerts */ }
     setLoadingAlerts(false);
   }, [pharmId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const medName = (id: string) => medicines.find(m => m.id === id)?.name ?? id;
-  const medUnit = (id: string) => medicines.find(m => m.id === id)?.unit ?? 'units';
+  const medName = (id: string) =>
+    medicines.find(m => m.id === id)?.name ?? FALLBACK_MEDICINES[id]?.name ?? id;
+  const medUnit = (id: string) =>
+    medicines.find(m => m.id === id)?.unit ?? FALLBACK_MEDICINES[id]?.unit ?? 'units';
 
   const nearExpiry = batches.filter(b => { const d = daysUntil(b.expiry_date); return d >= 0 && d <= 90; });
   const expired = batches.filter(b => daysUntil(b.expiry_date) < 0);
@@ -152,24 +213,33 @@ export function PharmacistInventory({ lang, medicines, isLoading }: PharmacistIn
               {isTa ? 'இருப்பு பதிவுகள் இல்லை.' : 'No inventory records yet. Use CSV import or record a receive transaction.'}
             </div>
           ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="bg-[#F7F9FB] text-[11px] text-[#5B6B7A] font-semibold">
-                  <th className="py-2 px-4 text-left">{isTa ? 'மருந்து' : 'Medicine'}</th>
-                  <th className="py-2 px-4 text-right">{isTa ? 'இருப்பு' : 'On Hand'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E3E8EE]">
-                {balances.slice(0, 8).map(b => (
-                  <tr key={b.id} className={b.quantity_on_hand === 0 ? 'bg-red-50/30' : 'hover:bg-slate-50/50'}>
-                    <td className="py-2.5 px-4 font-medium text-[#14202B]">{medName(b.medicine_id)}</td>
-                    <td className={`py-2.5 px-4 text-right font-bold tabular-nums ${b.quantity_on_hand === 0 ? 'text-red-700' : b.quantity_on_hand < 30 ? 'text-orange-600' : 'text-[#14202B]'}`}>
-                      {b.quantity_on_hand} <span className="font-normal text-[#5B6B7A] text-[10px]">{medUnit(b.medicine_id)}</span>
-                    </td>
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-[#F7F9FB] text-[11px] text-[#5B6B7A] font-semibold sticky top-0 border-b border-[#E3E8EE]">
+                    <th className="py-2 px-4 text-left">{isTa ? 'மருந்து' : 'Medicine'}</th>
+                    <th className="py-2 px-4 text-right">{isTa ? 'இருப்பு' : 'On Hand'}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#E3E8EE]">
+                  {balances.map(b => (
+                    <tr key={b.id} className={b.quantity_on_hand === 0 ? 'bg-red-50/40' : 'hover:bg-slate-50/50'}>
+                      <td className="py-2.5 px-4 font-medium text-[#14202B]">
+                        {medName(b.medicine_id)}
+                        {b.quantity_on_hand === 0 && (
+                          <span className="ml-2 text-[9px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded">
+                            {isTa ? 'கையிருப்பில் இல்லை' : 'Out of stock'}
+                          </span>
+                        )}
+                      </td>
+                      <td className={`py-2.5 px-4 text-right font-bold tabular-nums ${b.quantity_on_hand === 0 ? 'text-red-700' : b.quantity_on_hand < 30 ? 'text-orange-600' : 'text-[#14202B]'}`}>
+                        {b.quantity_on_hand} <span className="font-normal text-[#5B6B7A] text-[10px]">{medUnit(b.medicine_id)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

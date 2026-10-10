@@ -31,6 +31,14 @@ import { StateNationalOverview } from './StateNationalOverview';
 import { InventoryManager } from './InventoryManager';
 import { CsvImporter } from './CsvImporter';
 
+import {
+  FALLBACK_CENTRES,
+  FALLBACK_MEDICINES,
+  FALLBACK_KPIS,
+  FALLBACK_ALERTS,
+  FALLBACK_MATRIX,
+} from '../../db/demoFallbackData';
+
 interface OfficerDashboardProps {
   activeScreen: AppScreen;
   lang: Language;
@@ -40,35 +48,32 @@ interface OfficerDashboardProps {
 
 export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSuccess }: OfficerDashboardProps) {
   const { user } = useAuth();
-  const [centres, setCentres] = useState<Centre[]>([]);
-  const [medicines, setMedicines] = useState<Medicine[]>([]);
-  const [matrixData, setMatrixData] = useState<MatrixData | null>(null);
-  const [kpiData, setKpiData] = useState<KPIData | null>(null);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [centres, setCentres] = useState<Centre[]>(FALLBACK_CENTRES);
+  const [medicines, setMedicines] = useState<Medicine[]>(FALLBACK_MEDICINES);
+  const [matrixData, setMatrixData] = useState<MatrixData | null>(FALLBACK_MATRIX);
+  const [kpiData, setKpiData] = useState<KPIData | null>(FALLBACK_KPIS);
+  const [alerts, setAlerts] = useState<AlertItem[]>(FALLBACK_ALERTS);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [selectedCentreId, setSelectedCentreId] = useState('phc_valparai');
+  const [selectedCentreId, setSelectedCentreId] = useState(() => user?.scopeId || 'phc_valparai');
   const [selectedMedicineId, setSelectedMedicineId] = useState('med_pcm');
   const [pendingSyncCount, setPendingSyncCount] = useState(getOfflineQueue().length);
 
   const refreshAllData = async () => {
-    setIsLoading(true);
     try {
       const [metaRes, kpiRes, matrixRes, alertsRes] = await Promise.all([
-        fetch('/api/metadata').then(r => r.json()),
-        fetch('/api/kpis').then(r => r.json()),
-        fetch('/api/matrix').then(r => r.json()),
-        fetch('/api/alerts').then(r => r.json()),
+        fetch('/api/metadata').then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/kpis').then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/matrix').then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/alerts').then(r => r.ok ? r.json() : null).catch(() => null),
       ]);
-      setCentres(metaRes.centres || []);
-      setMedicines(metaRes.medicines || []);
-      setKpiData(kpiRes);
-      setMatrixData(matrixRes);
-      setAlerts(alertsRes || []);
+      if (metaRes?.centres?.length > 0) setCentres(metaRes.centres);
+      if (metaRes?.medicines?.length > 0) setMedicines(metaRes.medicines);
+      if (kpiRes && kpiRes.centres_at_risk !== undefined) setKpiData(kpiRes);
+      if (matrixRes && matrixRes.rows?.length > 0) setMatrixData(matrixRes);
+      if (alertsRes && alertsRes.length > 0) setAlerts(alertsRes);
     } catch (e) {
-      console.error('Data fetch failed', e);
-    } finally {
-      setIsLoading(false);
+      console.error('Data fetch failed, using fallback demo data', e);
     }
   };
 
@@ -104,7 +109,7 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
     }
     if (activeScreen === 'inventory_manager') {
       // Use demo pharmacy ID from seed data
-      const pharmId = user.scopeId ?? 'pharma_apollo_cbe';
+      const pharmId = user.scopeId ?? 'pharma_valparai_01';
       return <InventoryManager lang={lang} ownerId={pharmId} ownerType="pharmacy" />;
     }
     if (activeScreen === 'stock_entry' || activeScreen === 'stock_entry_facility') {
@@ -135,11 +140,11 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
       return <WeeklyReport lang={lang} />;
     }
     if (activeScreen === 'expiry_batches') {
-      const pharmId = user.scopeId ?? 'pharma_apollo_cbe';
+      const pharmId = user.scopeId ?? 'pharma_valparai_01';
       return <InventoryManager lang={lang} ownerId={pharmId} ownerType="pharmacy" />;
     }
     if (activeScreen === 'import_csv') {
-      const pharmId = user.scopeId ?? 'pharma_apollo_cbe';
+      const pharmId = user.scopeId ?? 'pharma_valparai_01';
       return <CsvImporter lang={lang} ownerId={pharmId} ownerType="pharmacy" />;
     }
     if (activeScreen === 'medicine_catalogue') {

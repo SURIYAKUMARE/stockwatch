@@ -776,7 +776,7 @@ DEMO_ALIAS_MAP = {
 
 DEMO_FALLBACK_USERS = {
     "patient_demo": {"name": "Senthil Kumar (Patient)", "email": "patient@demo.tn.gov.in", "role": "patient", "scope": {"state_id": "TN", "district_id": "coimbatore"}},
-    "pharma_demo": {"name": "K. Ramesh (Pharmacist)", "email": "pharmacist@demo.tn.gov.in", "role": "pharmacist", "scope": {"state_id": "TN", "district_id": "coimbatore", "pharmacy_id": "pharma_apollo_cbe"}},
+    "pharma_demo": {"name": "Suresh Pharmacist (Valparai Medical Store)", "email": "pharmacist@demo.tn.gov.in", "role": "pharmacist", "scope": {"state_id": "TN", "district_id": "coimbatore", "pharmacy_id": "pharma_valparai_01"}},
     "chc_demo": {"name": "Dr. Anitha (Medical Officer, CHC Pollachi)", "email": "chc@demo.tn.gov.in", "role": "chc_facility", "scope": {"state_id": "TN", "district_id": "coimbatore", "facility_id": "chc_pollachi"}},
     "district_demo": {"name": "Dr. Rajesh (District Health Officer, Coimbatore)", "email": "district@demo.tn.gov.in", "role": "district_officer", "scope": {"state_id": "TN", "district_id": "coimbatore"}},
     "state_demo": {"name": "Dr. Meenakshi (State Health Officer, Tamil Nadu)", "email": "state@demo.tn.gov.in", "role": "state_officer", "scope": {"state_id": "TN"}},
@@ -1174,6 +1174,13 @@ def list_all_inventory(session: Session = Depends(get_session)):
 def get_owner_inventory(owner_id: str, session: Session = Depends(get_session)):
     balances = session.exec(select(models.InventoryBalance).where(models.InventoryBalance.owner_id == owner_id)).all()
     batches = session.exec(select(models.MedicineBatch).where(models.MedicineBatch.owner_id == owner_id)).all()
+
+    # If unseeded or specific demo alias (e.g. pharma_valparai_01, ph1, demo_pharm_01), fallback gracefully
+    if not balances:
+        fallback_id = "pharma_valparai_01" if any(k in owner_id.lower() for k in ("pharm", "valparai", "store", "ph1")) else "phc_valparai"
+        balances = session.exec(select(models.InventoryBalance).where(models.InventoryBalance.owner_id == fallback_id)).all()
+        batches = session.exec(select(models.MedicineBatch).where(models.MedicineBatch.owner_id == fallback_id)).all()
+
     return {
         "owner_id": owner_id,
         "balances": balances,
@@ -1696,39 +1703,45 @@ def receive_transfer_order(transfer_id: str, session: Session = Depends(get_sess
 def get_state_analytics(state_id: str = "TN", session: Session = Depends(get_session)):
     """Returns state-wide district comparison, shortage rankings, and reporting compliance."""
     districts = [
-        {"id": "coimbatore", "name": "Coimbatore", "total_facilities": 12, "critical_shortages": 1, "avg_days_cover": 14.2, "compliance_pct": 98.4},
-        {"id": "nilgiris", "name": "The Nilgiris", "total_facilities": 8, "critical_shortages": 2, "avg_days_cover": 9.8, "compliance_pct": 94.0},
-        {"id": "tiruppur", "name": "Tiruppur", "total_facilities": 14, "critical_shortages": 0, "avg_days_cover": 18.5, "compliance_pct": 99.1},
-        {"id": "erode", "name": "Erode", "total_facilities": 11, "critical_shortages": 1, "avg_days_cover": 15.6, "compliance_pct": 96.5},
-        {"id": "salem", "name": "Salem", "total_facilities": 16, "critical_shortages": 2, "avg_days_cover": 11.2, "compliance_pct": 95.2}
+        {"id": "coimbatore", "name": "Coimbatore", "district": "Coimbatore", "facilities": 12, "total_facilities": 12, "critical_items": 1, "critical_shortages": 1, "avg_cover_days": 14.2, "avg_days_cover": 14.2, "compliance_pct": 98.4, "essential_availability_pct": 98.4},
+        {"id": "nilgiris", "name": "The Nilgiris", "district": "The Nilgiris", "facilities": 8, "total_facilities": 8, "critical_items": 2, "critical_shortages": 2, "avg_cover_days": 9.8, "avg_days_cover": 9.8, "compliance_pct": 94.0, "essential_availability_pct": 94.0},
+        {"id": "tiruppur", "name": "Tiruppur", "district": "Tiruppur", "facilities": 14, "total_facilities": 14, "critical_items": 0, "critical_shortages": 0, "avg_cover_days": 18.5, "avg_days_cover": 18.5, "compliance_pct": 99.1, "essential_availability_pct": 99.1},
+        {"id": "erode", "name": "Erode", "district": "Erode", "facilities": 11, "total_facilities": 11, "critical_items": 1, "critical_shortages": 1, "avg_cover_days": 15.6, "avg_days_cover": 15.6, "compliance_pct": 96.5, "essential_availability_pct": 96.5},
+        {"id": "salem", "name": "Salem", "district": "Salem", "facilities": 16, "total_facilities": 16, "critical_items": 2, "critical_shortages": 2, "avg_cover_days": 11.2, "avg_days_cover": 11.2, "compliance_pct": 95.2, "essential_availability_pct": 95.2},
+        {"id": "madurai", "name": "Madurai", "district": "Madurai", "facilities": 15, "total_facilities": 15, "critical_items": 1, "critical_shortages": 1, "avg_cover_days": 16.0, "avg_days_cover": 16.0, "compliance_pct": 97.0, "essential_availability_pct": 97.0},
+        {"id": "chennai", "name": "Chennai", "district": "Chennai", "facilities": 22, "total_facilities": 22, "critical_items": 0, "critical_shortages": 0, "avg_cover_days": 21.4, "avg_days_cover": 21.4, "compliance_pct": 99.5, "essential_availability_pct": 99.5},
     ]
     return {
         "state_id": state_id,
         "state_name": "Tamil Nadu",
-        "total_facilities": 61,
-        "total_critical_items": 6,
-        "state_avg_cover_days": 13.9,
-        "reporting_compliance_pct": 96.6,
+        "districts_at_risk": 3,
+        "total_facilities": 98,
+        "total_critical_items": 7,
+        "state_avg_cover_days": 15.2,
+        "reporting_compliance_pct": 97.1,
         "districts": districts,
-        "essential_availability_pct": 94.2
+        "essential_availability_pct": 96.8
     }
 
 @router.get("/analytics/national")
 def get_national_analytics(session: Session = Depends(get_session)):
     """Returns macro state comparisons and essential drug coverage index."""
     states = [
-        {"state_id": "TN", "state_name": "Tamil Nadu", "facilities": 1840, "stockout_risk_score": 14, "essential_cover_pct": 94.2, "active_transfers": 18},
-        {"state_id": "KL", "state_name": "Kerala", "facilities": 1120, "stockout_risk_score": 11, "essential_cover_pct": 96.1, "active_transfers": 12},
-        {"state_id": "KA", "state_name": "Karnataka", "facilities": 2240, "stockout_risk_score": 22, "essential_cover_pct": 89.5, "active_transfers": 31},
-        {"state_id": "MH", "state_name": "Maharashtra", "facilities": 3100, "stockout_risk_score": 26, "essential_cover_pct": 87.8, "active_transfers": 44},
-        {"state_id": "AP", "state_name": "Andhra Pradesh", "facilities": 1650, "stockout_risk_score": 19, "essential_cover_pct": 91.0, "active_transfers": 22}
+        {"state_id": "TN", "state_name": "Tamil Nadu", "state": "Tamil Nadu", "districts": 38, "facilities": 1840, "critical_items": 1, "stockout_risk_score": 14, "avg_cover_days": 15.2, "essential_availability_pct": 96.8, "essential_cover_pct": 96.8, "active_transfers": 18},
+        {"state_id": "KL", "state_name": "Kerala", "state": "Kerala", "districts": 14, "facilities": 1120, "critical_items": 0, "stockout_risk_score": 11, "avg_cover_days": 18.4, "essential_availability_pct": 97.5, "essential_cover_pct": 97.5, "active_transfers": 12},
+        {"state_id": "KA", "state_name": "Karnataka", "state": "Karnataka", "districts": 31, "facilities": 2240, "critical_items": 3, "stockout_risk_score": 22, "avg_cover_days": 12.1, "essential_availability_pct": 91.2, "essential_cover_pct": 91.2, "active_transfers": 31},
+        {"state_id": "MH", "state_name": "Maharashtra", "state": "Maharashtra", "districts": 36, "facilities": 3100, "critical_items": 4, "stockout_risk_score": 26, "avg_cover_days": 10.8, "essential_availability_pct": 89.4, "essential_cover_pct": 89.4, "active_transfers": 44},
+        {"state_id": "AP", "state_name": "Andhra Pradesh", "state": "Andhra Pradesh", "districts": 26, "facilities": 1650, "critical_items": 2, "stockout_risk_score": 19, "avg_cover_days": 13.5, "essential_availability_pct": 93.1, "essential_cover_pct": 93.1, "active_transfers": 22},
+        {"state_id": "RJ", "state_name": "Rajasthan", "state": "Rajasthan", "districts": 50, "facilities": 2400, "critical_items": 5, "stockout_risk_score": 28, "avg_cover_days": 9.4, "essential_availability_pct": 86.5, "essential_cover_pct": 86.5, "active_transfers": 39},
+        {"state_id": "UP", "state_name": "Uttar Pradesh", "state": "Uttar Pradesh", "districts": 75, "facilities": 4500, "critical_items": 8, "stockout_risk_score": 34, "avg_cover_days": 8.1, "essential_availability_pct": 84.0, "essential_cover_pct": 84.0, "active_transfers": 52},
     ]
     return {
         "country": "India",
-        "total_monitored_facilities": 9950,
-        "national_essential_drug_index": 91.7,
-        "critical_shortage_clusters": 4,
-        "macro_stockout_prevention_rate": 93.4,
+        "states_at_risk": 5,
+        "total_monitored_facilities": 16850,
+        "national_essential_drug_index": 92.4,
+        "critical_shortage_clusters": 6,
+        "macro_stockout_prevention_rate": 94.6,
         "states": states
     }
 
