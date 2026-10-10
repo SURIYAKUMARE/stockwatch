@@ -4,6 +4,7 @@ export type UserRole =
   | 'patient'
   | 'pharmacist'
   | 'chc_facility'
+  | 'facility'
   | 'district_officer'
   | 'state_officer'
   | 'national_officer'

@@ -77,6 +77,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
       localStorage.setItem('stockwatch_token', data.access_token);
       localStorage.setItem('stockwatch_user', JSON.stringify(data.user));
+
+      // Also sync sw_session_v3 for AuthContext
+      const roleMap: Record<string, string> = {
+        patient: 'patient',
+        pharmacist: 'pharmacist',
+        chc_facility: 'facility',
+        facility: 'facility',
+        district_officer: 'district_officer',
+        state_officer: 'state_officer',
+        national_officer: 'national_officer',
+      };
+      const authUser = {
+        id: data.user.id,
+        name: data.user.name || data.user.username,
+        email: data.user.email || data.user.username,
+        role: roleMap[data.user.role] || 'facility',
+        scopeId: data.user.scopes?.facility_id || data.user.scopes?.pharmacy_id || data.user.centre_id,
+        scopeName: data.user.scopes?.district_id || data.user.scopes?.state_id,
+        avatarInitials: (data.user.name || data.user.username || 'SW').slice(0, 2).toUpperCase(),
+        isDemo: data.user.username?.endsWith('_demo') ?? true,
+      };
+      localStorage.setItem('sw_session_v3', JSON.stringify({ user: authUser, token: data.access_token }));
+
       onLoginSuccess(data.user, data.access_token);
       onClose();
     } catch (e) {

@@ -20,8 +20,24 @@ const SESSION_KEY = 'sw_session_v3';
 function loadSession(): { user: AuthUser; token: string } | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
+    if (raw) return JSON.parse(raw);
+    const legacyUser = localStorage.getItem('stockwatch_user');
+    const legacyToken = localStorage.getItem('stockwatch_token') || 'demo_token';
+    if (legacyUser) {
+      const u = JSON.parse(legacyUser);
+      const user: AuthUser = {
+        id: u.id || 'demo_user',
+        name: u.name || u.username || 'User',
+        email: u.email || u.username || '',
+        role: mapBackendRole(u.role || 'district_officer'),
+        scopeId: u.scopes?.facility_id || u.scopes?.pharmacy_id || u.centre_id,
+        scopeName: u.scopes?.district_id || u.scopes?.state_id,
+        avatarInitials: (u.name || u.username || 'SW').slice(0, 2).toUpperCase(),
+        isDemo: true,
+      };
+      return { user, token: legacyToken };
+    }
+    return null;
   } catch {
     return null;
   }
@@ -29,10 +45,26 @@ function loadSession(): { user: AuthUser; token: string } | null {
 
 function saveSession(user: AuthUser, token: string) {
   localStorage.setItem(SESSION_KEY, JSON.stringify({ user, token }));
+  localStorage.setItem('stockwatch_token', token);
+  localStorage.setItem('stockwatch_user', JSON.stringify({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    username: user.email,
+    role: user.role === 'facility' ? 'chc_facility' : user.role,
+    scopes: {
+      facility_id: user.scopeId,
+      pharmacy_id: user.scopeId,
+      district_id: user.scopeName,
+      state_id: user.scopeName,
+    }
+  }));
 }
 
 function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('stockwatch_token');
+  localStorage.removeItem('stockwatch_user');
 }
 
 // ─── Role mapping: backend role strings → frontend UserRole ──────────────────
@@ -108,9 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token: string = data.access_token;
         const user = buildUser(data.user, token);
 
-        if (creds.rememberMe) {
-          saveSession(user, token);
-        }
+        // Save session
+        saveSession(user, token);
 
         setState({ user, token, isAuthenticated: true, isLoading: false, error: null });
         return;
@@ -129,16 +160,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Network offline or backend not running — fall back to demo accounts
       const { DEMO_ACCOUNTS } = await import('../types/auth');
       const account = DEMO_ACCOUNTS[creds.email.toLowerCase().trim()];
-      if (account && account.password === creds.password) {
+      const isDemoPw = creds.password === 'demo123' || creds.password === 'demo1234' || (account && account.password === creds.password);
+      if (account && isDemoPw) {
         const { password: _, ...user } = account;
         const token = `demo_token_${user.id}_${Date.now()}`;
-        if (creds.rememberMe) saveSession(user, token);
+        saveSession(user, token);
         setState({ user, token, isAuthenticated: true, isLoading: false, error: null });
       } else {
         setState(s => ({
           ...s,
           isLoading: false,
-          error: 'Could not reach the server. If using demo mode, check your email and password.',
+          error: 'Could not reach the server. If using demo mode, check your credentials.',
         }));
       }
     }

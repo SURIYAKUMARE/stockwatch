@@ -752,26 +752,91 @@ class RegisterRequest(BaseModel):
     state_id: Optional[str] = None
     registration_number: Optional[str] = None
 
+DEMO_ALIAS_MAP = {
+    "patient@demo.stockwatch": "patient_demo",
+    "pharmacist@demo.stockwatch": "pharma_demo",
+    "facility@demo.stockwatch": "chc_demo",
+    "district@demo.stockwatch": "district_demo",
+    "state@demo.stockwatch": "state_demo",
+    "national@demo.stockwatch": "national_demo",
+    "patient": "patient_demo",
+    "pharmacist": "pharma_demo",
+    "facility": "chc_demo",
+    "chc": "chc_demo",
+    "district": "district_demo",
+    "state": "state_demo",
+    "national": "national_demo",
+    "patient@demo.tn.gov.in": "patient_demo",
+    "pharmacist@demo.tn.gov.in": "pharma_demo",
+    "chc@demo.tn.gov.in": "chc_demo",
+    "district@demo.tn.gov.in": "district_demo",
+    "state@demo.tn.gov.in": "state_demo",
+    "national@demo.tn.gov.in": "national_demo",
+}
+
+DEMO_FALLBACK_USERS = {
+    "patient_demo": {"name": "Senthil Kumar (Patient)", "email": "patient@demo.tn.gov.in", "role": "patient", "scope": {"state_id": "TN", "district_id": "coimbatore"}},
+    "pharma_demo": {"name": "K. Ramesh (Pharmacist)", "email": "pharmacist@demo.tn.gov.in", "role": "pharmacist", "scope": {"state_id": "TN", "district_id": "coimbatore", "pharmacy_id": "pharma_apollo_cbe"}},
+    "chc_demo": {"name": "Dr. Anitha (Medical Officer, CHC Pollachi)", "email": "chc@demo.tn.gov.in", "role": "chc_facility", "scope": {"state_id": "TN", "district_id": "coimbatore", "facility_id": "chc_pollachi"}},
+    "district_demo": {"name": "Dr. Rajesh (District Health Officer, Coimbatore)", "email": "district@demo.tn.gov.in", "role": "district_officer", "scope": {"state_id": "TN", "district_id": "coimbatore"}},
+    "state_demo": {"name": "Dr. Meenakshi (State Health Officer, Tamil Nadu)", "email": "state@demo.tn.gov.in", "role": "state_officer", "scope": {"state_id": "TN"}},
+    "national_demo": {"name": "Dr. V. K. Paul (National Health Mission)", "email": "national@demo.tn.gov.in", "role": "national_officer", "scope": {}},
+}
+
 @router.post("/auth/login")
 def login(req: LoginRequest, session: Session = Depends(get_session)):
+    raw_ident = req.username_or_email.strip()
+    norm_ident = DEMO_ALIAS_MAP.get(raw_ident.lower(), raw_ident)
+
     query = select(models.User).where(
-        (models.User.username == req.username_or_email) | (models.User.email == req.username_or_email)
+        (models.User.username == raw_ident) |
+        (models.User.email == raw_ident) |
+        (models.User.username == norm_ident) |
+        (models.User.email == norm_ident)
     )
     user = session.exec(query).first()
     
+    # Auto-provision demo account if running against clean or unseeded database
+    if not user and norm_ident in DEMO_FALLBACK_USERS:
+        d = DEMO_FALLBACK_USERS[norm_ident]
+        user = models.User(
+            id=f"user_{norm_ident}",
+            username=norm_ident,
+            name=d["name"],
+            email=d["email"],
+            password_hash=hash_password("demo123"),
+            role=d["role"],
+            account_status="ACTIVE"
+        )
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+        sc_data = d.get("scope", {})
+        scope = models.UserScope(
+            user_id=user.id,
+            state_id=sc_data.get("state_id", "TN"),
+            district_id=sc_data.get("district_id", "coimbatore"),
+            facility_id=sc_data.get("facility_id"),
+            pharmacy_id=sc_data.get("pharmacy_id")
+        )
+        session.add(scope)
+        session.commit()
+
     # Check credentials
     if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
-    # If user has no password_hash set (legacy seed), allow demo login with 'demo123'
-    if not user.password_hash:
-        if req.password != "demo123":
-            raise HTTPException(status_code=401, detail="Invalid password")
-    else:
-        if not verify_password(req.password, user.password_hash) and req.password != "demo123":
-            raise HTTPException(status_code=401, detail="Invalid password")
+    demo_passwords = {"demo123", "demo1234"}
+    is_valid_pw = (
+        req.password in demo_passwords or
+        (user.password_hash and verify_password(req.password, user.password_hash)) or
+        (not user.password_hash and req.password in demo_passwords)
+    )
+    if not is_valid_pw:
+        raise HTTPException(status_code=401, detail="Invalid password")
             
-    if user.account_status != "ACTIVE":
+    if user.account_status and user.account_status != "ACTIVE":
         raise HTTPException(status_code=403, detail="Account is suspended or pending verification")
 
     # Fetch scope

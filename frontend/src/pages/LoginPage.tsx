@@ -20,12 +20,12 @@ interface LoginPageProps {
 
 // Quick-fill demo credentials
 const DEMO_PRESETS = [
-  { label: 'Patient', email: 'patient@demo.stockwatch' },
-  { label: 'Pharmacist', email: 'pharmacist@demo.stockwatch' },
-  { label: 'Facility', email: 'facility@demo.stockwatch' },
-  { label: 'District', email: 'district@demo.stockwatch' },
-  { label: 'State', email: 'state@demo.stockwatch' },
-  { label: 'National', email: 'national@demo.stockwatch' },
+  { label: 'District Officer', email: 'district_demo' },
+  { label: 'Facility / CHC', email: 'chc_demo' },
+  { label: 'Pharmacist', email: 'pharma_demo' },
+  { label: 'State Officer', email: 'state_demo' },
+  { label: 'National Officer', email: 'national_demo' },
+  { label: 'Patient', email: 'patient_demo' },
 ];
 
 export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
@@ -39,8 +39,7 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
 
   const validate = () => {
     const errs: typeof formErrors = {};
-    if (!email.trim()) errs.email = 'Email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email address.';
+    if (!email.trim()) errs.email = 'Username or email is required.';
     if (!password) errs.password = 'Password is required.';
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
@@ -55,7 +54,7 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
 
   const fillDemo = (preset: typeof DEMO_PRESETS[0]) => {
     setEmail(preset.email);
-    setPassword('demo1234');
+    setPassword('demo123');
     clearError();
     setFormErrors({});
   };
@@ -174,20 +173,20 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-              {/* Email */}
+              {/* Username or Email */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#14202B]" htmlFor="login-email">
-                  Email address
+                  Username or Email
                 </label>
                 <div className="relative">
                   <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5B6B7A]" />
                   <input
                     id="login-email"
-                    type="email"
-                    autoComplete="email"
+                    type="text"
+                    autoComplete="username"
                     value={email}
                     onChange={e => { setEmail(e.target.value); clearError(); }}
-                    placeholder="you@example.com"
+                    placeholder="e.g. district_demo or district@demo.tn.gov.in"
                     className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border bg-[#F7F9FB] text-[#14202B] focus:outline-none focus:ring-2 focus:ring-[#0F6B6B] focus:border-[#0F6B6B] transition-colors ${
                       formErrors.email ? 'border-red-400' : 'border-[#E3E8EE]'
                     }`}

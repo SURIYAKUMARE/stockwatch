@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
 import { AlertItem, UrgencyTier } from '../types';
 import { translations, Language } from '../i18n';
 import { TierBadge } from './TierBadge';
+import { AlertTimeline } from './AlertTimeline';
 
 interface PriorityAlertsProps {
   alerts: AlertItem[];
