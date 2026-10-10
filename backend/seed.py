@@ -137,11 +137,19 @@ def run_seed():
             ("med_pcm", "Paracetamol 500mg", "tablets", 30, 730, True, "tablet", "500mg"),
             ("med_pcm_syr", "Paracetamol Syrup 60ml", "bottles", 30, 730, True, "syrup", "60ml"),
             ("med_amox", "Amoxicillin 250mg", "capsules", 30, 730, True, "capsule", "250mg"),
+            ("med_amox_500", "Amoxicillin 500mg", "capsules", 30, 730, True, "capsule", "500mg"),
             ("med_ors", "ORS Sachets 20.5g", "sachets", 30, 730, True, "sachet", "20.5g"),
+            ("med_zinc", "Zinc Sulfate 20mg", "tablets", 30, 730, True, "tablet", "20mg"),
             ("med_metformin", "Metformin 500mg", "tablets", 30, 1095, True, "tablet", "500mg"),
             ("med_ifa", "Iron and Folic Acid", "tablets", 30, 730, True, "tablet", "100mg+0.5mg"),
             ("med_cetirizine", "Cetirizine 10mg", "tablets", 30, 1095, True, "tablet", "10mg"),
             ("med_alben", "Albendazole 400mg", "tablets", 30, 1095, True, "tablet", "400mg"),
+            ("med_asv", "Anti-Snake Venom 10ml Inj", "vials", 30, 730, True, "injection", "10ml"),
+            ("med_arv", "Anti-Rabies Vaccine 0.5ml", "vials", 30, 365, True, "injection", "0.5ml"),
+            ("med_amlo", "Amlodipine 5mg", "tablets", 30, 1095, True, "tablet", "5mg"),
+            ("med_azithro", "Azithromycin 500mg", "tablets", 30, 730, True, "tablet", "500mg"),
+            ("med_salbutamol", "Salbutamol Inhaler 100mcg", "inhalers", 30, 730, True, "inhaler", "100mcg"),
+            ("med_atropine", "Atropine Sulfate 0.6mg/ml Inj", "ampoules", 30, 730, True, "injection", "0.6mg/ml"),
         ]
 
         medicines = []
@@ -310,12 +318,36 @@ def run_seed():
                 elif c.id == "phc_aliyar" and m.id == "med_pcm_syr":
                     base_mean = 10
                     stock = 420 # Surplus donor!
+                elif c.id == "phc_valparai" and m.id == "med_asv":
+                    base_mean = 2
+                    stock = 3 # CRITICAL shortage (only 3 vials ASV in snake bite plantation season)
+                elif c.id == "chc_pollachi" and m.id == "med_asv":
+                    base_mean = 1
+                    stock = 36 # SURPLUS donor for ASV (36 vials)
+                elif c.id == "phc_anaimalai" and m.id == "med_arv":
+                    base_mean = 3
+                    stock = 8 # HIGH shortage of Rabies vaccine
+                elif c.id == "chc_pollachi" and m.id == "med_arv":
+                    base_mean = 1
+                    stock = 55 # SURPLUS donor for ARV
                 elif c.id == "phc_samathur" and m.id == "med_pcm_syr":
                     base_mean = 12
                     stock = 280 # Alternative donor!
                 elif c.id == "phc_anaimalai" and m.id == "med_ors":
                     base_mean = 35
                     stock = 110 # High tier
+                elif c.id == "phc_valparai" and m.id == "med_salbutamol":
+                    base_mean = 4
+                    stock = 14 # WATCH tier inhaler
+                elif c.id == "phc_aliyar" and m.id == "med_salbutamol":
+                    base_mean = 2
+                    stock = 75 # Surplus donor inhalers
+                elif c.id == "phc_pollachi_rural" and m.id == "med_atropine":
+                    base_mean = 3
+                    stock = 9 # Critical emergency antidote
+                elif c.id == "chc_pollachi" and m.id == "med_atropine":
+                    base_mean = 1
+                    stock = 60 # Surplus donor atropine
                 elif c.is_stale:
                     base_mean = 15
                     stock = 90
@@ -342,13 +374,22 @@ def run_seed():
                 )
                 session.add(ib)
 
+                # Planted near-expiry dates for showcase
+                batch_exp = "2027-12-31"
+                if c.id == "phc_valparai" and m.id == "med_pcm":
+                    batch_exp = (today + timedelta(days=19)).isoformat() # Near-expiry alert in 19 days!
+                elif c.id == "phc_anaimalai" and m.id == "med_amox":
+                    batch_exp = (today + timedelta(days=34)).isoformat() # Near-expiry alert in 34 days!
+                elif c.id == "phc_aliyar" and m.id == "med_ors":
+                    batch_exp = (today + timedelta(days=62)).isoformat() # Near-expiry alert in 62 days!
+
                 # Batch
                 mb = MedicineBatch(
                     owner_type="facility",
                     owner_id=c.id,
                     medicine_id=m.id,
                     batch_number=f"BTH-{c.id[:4].upper()}-{m.id[-3:].upper()}",
-                    expiry_date="2027-12-31",
+                    expiry_date=batch_exp,
                     received_quantity=stock + 50,
                     current_quantity=stock,
                     supplier_name="TN Medical Services Corp"
@@ -552,14 +593,59 @@ def run_seed():
                 session.add(alert)
 
                 if tier == "CRITICAL":
-                    event = AlertEvent(
-                        alert_id=alert.id,
-                        action="ALERT_TRIGGERED",
-                        timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
-                        user="System Early Warning",
-                        notes=f"Surge detected. Consumption up {abs(round(pct_change))}%."
-                    )
-                    session.add(event)
+                    if c.id == "phc_valparai" and m.id == "med_pcm":
+                        session.add(AlertEvent(
+                            alert_id=alert.id,
+                            action="ALERT_TRIGGERED",
+                            timestamp=datetime.now(timezone.utc) - timedelta(hours=3),
+                            user="System Early Warning",
+                            notes=f"Viral fever cluster detected. Daily dispensing increased by {abs(round(pct_change))}%."
+                        ))
+                        session.add(AlertEvent(
+                            alert_id=alert.id,
+                            action="ACKNOWLEDGED",
+                            timestamp=datetime.now(timezone.utc) - timedelta(hours=2, minutes=15),
+                            user="Dr. Rajesh (DDHS Coimbatore)",
+                            notes="Medical Officer acknowledged. Reviewing inter-facility transfers from PHC Aliyar."
+                        ))
+                        session.add(AlertEvent(
+                            alert_id=alert.id,
+                            action="TRANSFER_APPROVED",
+                            timestamp=datetime.now(timezone.utc) - timedelta(hours=1, minutes=30),
+                            user="Dr. Rajesh (DDHS Coimbatore)",
+                            notes="Approved bilateral transfer of 262 tablets from PHC Aliyar."
+                        ))
+                        session.add(AlertEvent(
+                            alert_id=alert.id,
+                            action="DISPATCHED_SMS",
+                            timestamp=datetime.now(timezone.utc) - timedelta(minutes=45),
+                            user="Automated Dispatch Gateway",
+                            notes="SMS alert dispatched to Valparai MO and courier transport."
+                        ))
+                    elif c.id == "phc_valparai" and m.id == "med_asv":
+                        session.add(AlertEvent(
+                            alert_id=alert.id,
+                            action="ALERT_TRIGGERED",
+                            timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
+                            user="System Early Warning",
+                            notes="Critical risk: Only 3 vials Anti-Snake Venom left during monsoon plantation season."
+                        ))
+                        session.add(AlertEvent(
+                            alert_id=alert.id,
+                            action="ACKNOWLEDGED",
+                            timestamp=datetime.now(timezone.utc) - timedelta(hours=1, minutes=10),
+                            user="Dr. Rajesh (DDHS Coimbatore)",
+                            notes="Prioritized emergency replenishment from CHC Pollachi."
+                        ))
+                    else:
+                        event = AlertEvent(
+                            alert_id=alert.id,
+                            action="ALERT_TRIGGERED",
+                            timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
+                            user="System Early Warning",
+                            notes=f"Surge detected. Consumption up {abs(round(pct_change))}%."
+                        )
+                        session.add(event)
 
         session.commit()
         print("[OK] Deterministic seed data successfully created for all 6 roles, facilities, pharmacies, and medicines!")
