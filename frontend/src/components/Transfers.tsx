@@ -11,7 +11,15 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowLeftRight,
-  RefreshCw
+  RefreshCw,
+  Zap,
+  Check,
+  X,
+  Send,
+  PackageCheck,
+  Building,
+  RotateCcw,
+  ShieldAlert
 } from 'lucide-react';
 import {
   Centre,
@@ -52,10 +60,19 @@ export const Transfers: React.FC<TransfersProps> = ({
   );
   const [data, setData] = useState<TransferSuggestionsData | null>(null);
   const [pooledData, setPooledData] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'network' | 'pooled'>('network');
+  const [activeTab, setActiveTab] = useState<'network' | 'pooled' | 'smart_engine'>('network');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isApproving, setIsApproving] = useState<boolean>(false);
   const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null);
+
+  // Smart Redistribution Engine State
+  const [escalatedOrders, setEscalatedOrders] = useState<any[]>([]);
+  const [allTransfers, setAllTransfers] = useState<any[]>([]);
+  const [smartSearchQty, setSmartSearchQty] = useState<number>(50);
+  const [smartUrgency, setSmartUrgency] = useState<string>('HIGH');
+  const [isTriggeringAutoSearch, setIsTriggeringAutoSearch] = useState<boolean>(false);
+  const [searchResultDossier, setSearchResultDossier] = useState<any | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // What-If Panel Sliders
   const [consumptionShiftPct, setConsumptionShiftPct] = useState<number>(0);
@@ -82,9 +99,22 @@ export const Transfers: React.FC<TransfersProps> = ({
       .catch((e) => console.error(e));
   };
 
+  const fetchEscalations = () => {
+    fetch('/api/redistribution/escalations')
+      .then((res) => res.json())
+      .then((json) => setEscalatedOrders(Array.isArray(json) ? json : []))
+      .catch((e) => console.error(e));
+
+    fetch('/api/transfers')
+      .then((res) => res.json())
+      .then((json) => setAllTransfers(Array.isArray(json) ? json : []))
+      .catch((e) => console.error(e));
+  };
+
   useEffect(() => {
     fetchSuggestions();
     fetchPooled();
+    fetchEscalations();
   }, [shortageCentreId, medicineId]);
 
   const handleApproveTransfer = async (donor: DonorCandidate) => {
@@ -119,6 +149,97 @@ export const Transfers: React.FC<TransfersProps> = ({
       alert('Network error approving transfer');
     } finally {
       setIsApproving(false);
+    }
+  };
+
+  // Trigger Hierarchical Smart Redistribution Auto-Search
+  const handleTriggerAutoSearch = async () => {
+    setIsTriggeringAutoSearch(true);
+    setActionMessage(null);
+    try {
+      const res = await fetch('/api/redistribution/auto-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicine_id: medicineId,
+          requested_qty: smartSearchQty,
+          urgency: smartUrgency,
+          requester_owner_id: shortageCentreId,
+          requester_owner_type: 'facility',
+          notes: `Automatic multi-tier shortage request from ${shortageCentreId}`
+        })
+      });
+      const json = await res.json();
+      setSearchResultDossier(json);
+      setActionMessage(json.message || 'Auto-search executed successfully.');
+      fetchEscalations();
+    } catch (e) {
+      alert('Failed to trigger smart redistribution search');
+    } finally {
+      setIsTriggeringAutoSearch(false);
+    }
+  };
+
+  // Supplier Offer Response: ACCEPT, REJECT, COUNTER
+  const handleOfferResponse = async (transferId: string, action: 'ACCEPT' | 'REJECT' | 'COUNTER', counterQty?: number, reason?: string) => {
+    try {
+      const res = await fetch(`/api/transfers/${transferId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          counter_qty: counterQty,
+          rejection_reason: reason || 'Stock committed to local community camp'
+        })
+      });
+      const json = await res.json();
+      setActionMessage(json.message || `Action ${action} recorded.`);
+      fetchEscalations();
+      onRefreshData();
+    } catch (e) {
+      alert('Failed to respond to offer');
+    }
+  };
+
+  // Officer Approval for Escalated Transfers
+  const handleOfficerApprove = async (transferId: string) => {
+    try {
+      const res = await fetch(`/api/transfers/${transferId}/approve`, { method: 'POST' });
+      if (res.ok) {
+        setActionMessage('Transfer approved by authorized officer. Stock reserved for dispatch.');
+        fetchEscalations();
+        onRefreshData();
+      }
+    } catch (e) {
+      alert('Failed to approve transfer');
+    }
+  };
+
+  // Dispatch Transfer
+  const handleDispatchOrder = async (transferId: string) => {
+    try {
+      const res = await fetch(`/api/transfers/${transferId}/dispatch`, { method: 'POST' });
+      if (res.ok) {
+        setActionMessage('Transfer order dispatched. Courier transport in transit.');
+        fetchEscalations();
+        onRefreshData();
+      }
+    } catch (e) {
+      alert('Failed to dispatch transfer');
+    }
+  };
+
+  // Receive Transfer (Atomically updates donor & recipient balances)
+  const handleReceiveOrder = async (transferId: string) => {
+    try {
+      const res = await fetch(`/api/transfers/${transferId}/receive`, { method: 'POST' });
+      if (res.ok) {
+        setActionMessage('Stock received & verified! Recipient inventory balance updated atomically.');
+        fetchEscalations();
+        onRefreshData();
+      }
+    } catch (e) {
+      alert('Failed to receive transfer');
     }
   };
 
@@ -179,11 +300,11 @@ export const Transfers: React.FC<TransfersProps> = ({
         </div>
       </div>
 
-      {/* Mode Tabs: Network Optimizer vs Block Pooled View */}
-      <div className="flex gap-2 border-b border-[#E3E8EE]">
+      {/* Mode Tabs: Network Optimizer vs Block Pooled View vs Smart Engine */}
+      <div className="flex gap-2 border-b border-[#E3E8EE] overflow-x-auto">
         <button
           onClick={() => setActiveTab('network')}
-          className={`pb-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+          className={`pb-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
             activeTab === 'network'
               ? 'border-[#0F6B6B] text-[#0F6B6B]'
               : 'border-transparent text-[#5B6B7A] hover:text-[#14202B]'
@@ -194,7 +315,7 @@ export const Transfers: React.FC<TransfersProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('pooled')}
-          className={`pb-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+          className={`pb-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
             activeTab === 'pooled'
               ? 'border-[#0F6B6B] text-[#0F6B6B]'
               : 'border-transparent text-[#5B6B7A] hover:text-[#14202B]'
@@ -202,6 +323,22 @@ export const Transfers: React.FC<TransfersProps> = ({
         >
           <Layers size={14} />
           <span>{t.pooled_view_title}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('smart_engine')}
+          className={`pb-2.5 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+            activeTab === 'smart_engine'
+              ? 'border-[#0F6B6B] text-[#0F6B6B]'
+              : 'border-transparent text-[#5B6B7A] hover:text-[#14202B]'
+          }`}
+        >
+          <Zap size={14} className="text-amber-500" />
+          <span>Smart Redistribution Engine & Escalations</span>
+          {escalatedOrders.length > 0 && (
+            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] rounded-full font-extrabold">
+              {escalatedOrders.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -520,7 +657,7 @@ export const Transfers: React.FC<TransfersProps> = ({
             )}
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'pooled' ? (
         /* Block-Level Pooled View */
         <div className="bg-white rounded-lg border border-[#E3E8EE] p-5 shadow-xs space-y-4">
           <div>
@@ -570,6 +707,286 @@ export const Transfers: React.FC<TransfersProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      ) : (
+        /* Smart Hierarchical Redistribution Engine & Officer Escalations */
+        <div className="space-y-6">
+          {/* Header Action Card */}
+          <div className="bg-gradient-to-r from-teal-900 to-[#0F6B6B] text-white rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-teal-300 bg-white/10 px-2 py-0.5 rounded-full">
+                  Real-Time Automation Engine
+                </span>
+                <h3 className="text-base font-bold mt-1 text-white flex items-center gap-2">
+                  <Zap size={18} className="text-amber-400" />
+                  <span>Hierarchical Multi-Tier Medicine Redistribution</span>
+                </h3>
+                <p className="text-xs text-teal-100 max-w-2xl mt-0.5">
+                  Automated fallback searching: Town network (&lt;5km) → Nearby town pharmacies (&lt;15km) → District facilities (&lt;50km) → State warehouses (&lt;250km) → National channels.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleTriggerAutoSearch}
+                  disabled={isTriggeringAutoSearch}
+                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isTriggeringAutoSearch ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                  <span>Trigger Auto-Search for Shortage</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick configuration row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-white/15 text-xs">
+              <div className="bg-white/10 rounded-lg p-2.5">
+                <span className="text-[10px] text-teal-200 uppercase font-semibold">Shortage Facility</span>
+                <div className="font-bold text-white mt-0.5">{centres.find(c => c.id === shortageCentreId)?.name || shortageCentreId}</div>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2.5">
+                <span className="text-[10px] text-teal-200 uppercase font-semibold">Medicine & Requested Units</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-bold text-white">{medicines.find(m => m.id === medicineId)?.name || medicineId}</span>
+                  <input
+                    type="number"
+                    value={smartSearchQty}
+                    onChange={e => setSmartSearchQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 px-1.5 py-0.5 text-xs rounded bg-white text-[#14202B] font-bold text-center"
+                  />
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-lg p-2.5">
+                <span className="text-[10px] text-teal-200 uppercase font-semibold">Urgency Classification</span>
+                <div className="flex gap-1.5 mt-0.5">
+                  {(['ROUTINE', 'URGENT', 'CRITICAL'] as const).map(u => (
+                    <button
+                      key={u}
+                      onClick={() => setSmartUrgency(u)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                        smartUrgency === u
+                          ? u === 'CRITICAL' ? 'bg-red-500 text-white' : 'bg-amber-400 text-slate-950'
+                          : 'bg-white/20 text-teal-100 hover:bg-white/30'
+                      }`}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Message Banner */}
+          {actionMessage && (
+            <div className="bg-teal-50 border border-teal-300 text-teal-900 px-4 py-3 rounded-xl text-xs font-semibold flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-teal-600" />
+                <span>{actionMessage}</span>
+              </div>
+              <button onClick={() => setActionMessage(null)} className="text-[#5B6B7A] hover:text-[#14202B]">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Section 1: Active Officer Escalation Dossiers */}
+          <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
+              <div>
+                <h4 className="text-sm font-bold text-[#14202B] flex items-center gap-2">
+                  <ShieldAlert size={16} className="text-red-600" />
+                  <span>Administrative Escalation Dossiers (Awaiting Officer Approval)</span>
+                </h4>
+                <p className="text-xs text-[#5B6B7A] mt-0.5">
+                  Shortages unresolved by local pharmacies automatically escalate up the health hierarchy with verified audit dossiers.
+                </p>
+              </div>
+              <span className="px-2.5 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200">
+                {escalatedOrders.length} Pending Review
+              </span>
+            </div>
+
+            {escalatedOrders.length === 0 ? (
+              <div className="text-center py-6 text-xs text-[#5B6B7A]">
+                No pending escalation dossiers. All local inter-facility transfers resolved within SLA.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {escalatedOrders.map(esc => (
+                  <div key={esc.id} className="border border-red-200 bg-red-50/30 rounded-xl p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-red-200">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-[#14202B]">{esc.medicine_name}</span>
+                          <span className="text-xs text-[#5B6B7A]">({esc.strength} · {esc.dosage_form})</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-800">
+                            {esc.urgency_level}
+                          </span>
+                        </div>
+                        <div className="text-xs text-[#5B6B7A] mt-0.5">
+                          Reference: <span className="font-mono font-semibold">{esc.transfer_reference}</span> · Created: {esc.created_at}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#14202B] bg-white px-3 py-1 rounded-lg border border-[#E3E8EE]">
+                          Qty: {esc.quantity} units
+                        </span>
+                        {esc.status === 'APPROVED' ? (
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">
+                            Approved
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleOfficerApprove(esc.id)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                          >
+                            <Check size={13} />
+                            <span>Approve Redistribution</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Escalation Dossier Audit Details */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs bg-white p-3 rounded-lg border border-[#E3E8EE]">
+                      <div>
+                        <span className="text-[10px] text-[#5B6B7A] uppercase font-bold">Requesting Facility</span>
+                        <div className="font-semibold text-[#14202B]">{esc.to_owner_id} ({esc.to_owner_type})</div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#5B6B7A] uppercase font-bold">Escalation Tier & Role</span>
+                        <div className="font-semibold text-rose-700">Tier: {esc.escalation_level} · Role: {esc.current_owner_role}</div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#5B6B7A] uppercase font-bold">Officer Approval Flag</span>
+                        <div className="font-semibold text-amber-700">{esc.requires_officer_approval ? 'Required' : 'Granted'}</div>
+                      </div>
+                    </div>
+
+                    {esc.rejection_reasons && esc.rejection_reasons.length > 0 && (
+                      <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg p-2.5 space-y-1">
+                        <span className="text-[10px] font-bold text-amber-900 uppercase">Prior Supplier Rejections:</span>
+                        <ul className="list-disc pl-4 text-[11px] text-amber-800 space-y-0.5">
+                          {esc.rejection_reasons.map((r: string, idx: number) => (
+                            <li key={idx}>{r}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Complete Transfer Lifecycle Monitor */}
+          <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
+              <div>
+                <h4 className="text-sm font-bold text-[#14202B]">
+                  Transfer Lifecycle & Atomic Stock Reservations
+                </h4>
+                <p className="text-xs text-[#5B6B7A] mt-0.5">
+                  Tracks status: Created → Offered → Accepted → Reserved → Dispatched → Received.
+                </p>
+              </div>
+              <button
+                onClick={fetchEscalations}
+                className="text-xs text-[#0F6B6B] hover:underline font-bold flex items-center gap-1"
+              >
+                <RefreshCw size={13} />
+                <span>Refresh Status</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto border border-[#E3E8EE] rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F7F9FB] border-b border-[#E3E8EE] text-[#5B6B7A] uppercase text-[10px] tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-2.5 px-3">Reference</th>
+                    <th className="py-2.5 px-3">From (Supplier / PHC)</th>
+                    <th className="py-2.5 px-3">To (Recipient)</th>
+                    <th className="py-2.5 px-3">Qty</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3">Stock Reserved</th>
+                    <th className="py-2.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E3E8EE]">
+                  {allTransfers.map((trf) => (
+                    <tr key={trf.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-3 font-mono font-bold text-[#14202B]">{trf.transfer_reference}</td>
+                      <td className="py-3 px-3 text-[#14202B] font-semibold">{trf.from_owner_id}</td>
+                      <td className="py-3 px-3 text-[#14202B] font-semibold">{trf.to_owner_id}</td>
+                      <td className="py-3 px-3 tabular-nums font-bold text-[#0F6B6B]">{trf.quantity}</td>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          trf.status === 'RECEIVED' ? 'bg-emerald-100 text-emerald-800' :
+                          trf.status === 'DISPATCHED' ? 'bg-blue-100 text-blue-800' :
+                          trf.status === 'RESERVED' || trf.status === 'APPROVED' ? 'bg-teal-100 text-[#0F6B6B]' :
+                          trf.status === 'OFFERED' ? 'bg-amber-100 text-amber-800' :
+                          trf.status === 'ESCALATED' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {trf.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        {trf.stock_reserved ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <ShieldCheck size={13} />
+                            <span>Atomic Lock</span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {trf.status === 'OFFERED' && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOfferResponse(trf.id, 'ACCEPT')}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px]"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleOfferResponse(trf.id, 'REJECT')}
+                              className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded font-bold text-[10px]"
+                            >
+                              Reject & Fallback
+                            </button>
+                          </div>
+                        )}
+                        {(trf.status === 'APPROVED' || trf.status === 'RESERVED') && (
+                          <button
+                            onClick={() => handleDispatchOrder(trf.id)}
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-[10px]"
+                          >
+                            Dispatch
+                          </button>
+                        )}
+                        {trf.status === 'DISPATCHED' && (
+                          <button
+                            onClick={() => handleReceiveOrder(trf.id)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px]"
+                          >
+                            Verify & Receive
+                          </button>
+                        )}
+                        {trf.status === 'RECEIVED' && (
+                          <span className="text-[11px] text-emerald-700 font-semibold">Completed</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

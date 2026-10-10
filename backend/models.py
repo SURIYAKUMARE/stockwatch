@@ -224,17 +224,28 @@ class InventoryTransaction(SQLModel, table=True):
 class TransferOrder(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     transfer_reference: str
-    from_owner_type: str = "facility"
+    from_owner_type: str = "facility" # facility, pharmacy
     from_owner_id: str
-    to_owner_type: str = "facility"
+    to_owner_type: str = "facility" # facility, pharmacy
     to_owner_id: str
     medicine_id: str
     quantity: int
+    counter_quantity: Optional[int] = None
     distance_km: float = 0.0
     transit_minutes: int = 0
-    status: str = "REQUESTED" # REQUESTED, APPROVED, REJECTED, DISPATCHED, RECEIVED, CANCELLED
+    urgency_level: str = "URGENT" # ROUTINE, URGENT, CRITICAL
+    request_level: str = "TOWN" # TOWN, DISTRICT, STATE, NATIONAL
+    escalation_level: str = "facility" # facility, town, district, state, national
+    current_owner_role: str = "pharmacist" # pharmacist, facility, chc_facility, district_officer, state_officer, national_officer
+    status: str = "REQUESTED" # CREATED, SEARCHING, OFFERED, ACCEPTED, APPROVED, RESERVED, DISPATCHED, RECEIVED, COMPLETED, REJECTED, EXPIRED, CANCELLED, ESCALATED, PARTIALLY_FULFILLED
     created_by: str = "Pharmacist"
     approved_by: Optional[str] = None
+    approved_by_role: Optional[str] = None
+    requires_officer_approval: bool = False
+    stock_reserved: bool = False
+    contacted_suppliers_json: str = "[]"
+    rejection_reasons_json: str = "[]"
+    escalation_deadline: Optional[datetime] = None
     dispatched_at: Optional[datetime] = None
     received_at: Optional[datetime] = None
     notes: Optional[str] = None
@@ -260,3 +271,94 @@ class AuditLog(SQLModel, table=True):
     user_role: str
     details: str = ""
     created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= PATIENT CARE & MEDICATION REMINDERS =================
+class MedicationSchedule(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    patient_id: str = Field(foreign_key="user.id")
+    medicine_name: str
+    strength: str
+    dosage_form: str
+    dose_quantity: str # e.g. "1 tablet", "5ml"
+    frequency_per_day: int = 1
+    schedule_times_json: str = '["08:00"]' # JSON list of HH:MM strings
+    start_date: str # YYYY-MM-DD
+    end_date: Optional[str] = None # YYYY-MM-DD
+    prescribed_instructions: str = "Take with water after food"
+    doctor_name: Optional[str] = None
+    status: str = "ACTIVE" # ACTIVE, COMPLETED, PAUSED
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+class MedicationReminderLog(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    schedule_id: str = Field(foreign_key="medicationschedule.id")
+    patient_id: str = Field(foreign_key="user.id")
+    scheduled_time: str # YYYY-MM-DD HH:MM
+    action: str = "PENDING" # TAKEN, SKIPPED, SNOOZED, PENDING
+    action_timestamp: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= VERIFIED MEDICINE CLINICAL INFO =================
+class MedicineInfo(SQLModel, table=True):
+    id: str = Field(primary_key=True) # e.g. "med_pcm"
+    canonical_id: Optional[str] = None
+    generic_name: str
+    brand_names: str # e.g. "Crocin, Dolo, Calpol"
+    active_ingredients: str
+    strength: str
+    dosage_form: str
+    route_of_administration: str # Oral, Intravenous, Inhalation, etc.
+    approved_indications: str # Common approved uses
+    common_side_effects: str
+    serious_warnings: str
+    contraindications: str
+    drug_interactions: str
+    storage_instructions: str
+    prescription_status: str = "OTC" # Rx or OTC
+    source: str = "National Essential Drugs List (EDL) & CDSCO"
+    verified_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= IN-APP NOTIFICATIONS & AUTOMATION =================
+class Notification(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: Optional[str] = None # specific user
+    target_role: Optional[str] = None # pharmacist, chc_facility, district_officer, etc.
+    target_scope: Optional[str] = None # facility_id / district_id
+    title: str
+    message: str
+    category: str = "STOCK_ALERT" # STOCK_ALERT, TRANSFER_OFFER, ESCALATION, REMINDER, SYSTEM
+    priority: str = "INFO" # INFO, WARNING, CRITICAL
+    is_read: bool = False
+    action_link: Optional[str] = None
+    idempotency_key: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= SUPPLIER & PURCHASE ORDERS =================
+class Supplier(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    supplier_name: str
+    contact_person: str
+    phone: str
+    email: str
+    lead_time_days: int = 5
+    license_number: str
+    district_id: str
+    state_id: str
+    is_approved: bool = True
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+class PurchaseOrder(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    po_reference: str
+    owner_type: str = "facility" # facility, pharmacy
+    owner_id: str
+    supplier_id: str = Field(foreign_key="supplier.id")
+    medicine_id: str
+    quantity: int
+    unit_price: float = 0.0
+    status: str = "SUBMITTED" # DRAFT, SUBMITTED, ACKNOWLEDGED, IN_TRANSIT, RECEIVED, CANCELLED
+    expected_delivery_date: str
+    created_by: str = "Pharmacist"
+    created_at: datetime = Field(default_factory=get_utc_now)
+

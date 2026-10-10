@@ -18,14 +18,15 @@ interface LoginPageProps {
   onGoToRegister: () => void;
 }
 
-// Quick-fill demo credentials
+// Quick-fill demo credentials for all 7 User Roles
 const DEMO_PRESETS = [
-  { label: 'District Officer', email: 'district_demo' },
-  { label: 'Facility / CHC', email: 'chc_demo' },
-  { label: 'Pharmacist', email: 'pharma_demo' },
-  { label: 'State Officer', email: 'state_demo' },
-  { label: 'National Officer', email: 'national_demo' },
-  { label: 'Patient', email: 'patient_demo' },
+  { label: 'Patient', email: 'patient_demo', badge: 'Patient' },
+  { label: 'Retail Pharmacist', email: 'pharma_demo', badge: 'Pharmacy' },
+  { label: 'PHC Pharmacist', email: 'phc_demo', badge: 'PHC' },
+  { label: 'CHC Officer', email: 'chc_demo', badge: 'CHC' },
+  { label: 'District Officer', email: 'district_demo', badge: 'District' },
+  { label: 'State Officer', email: 'state_demo', badge: 'State' },
+  { label: 'National Officer', email: 'national_demo', badge: 'National' },
 ];
 
 export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
@@ -96,7 +97,7 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
           <ul className="space-y-2 pt-2">
             {[
               'Velocity & acceleration-based forecasting',
-              'Six role-specific dashboards',
+              'Seven role-specific dashboards',
               'Inter-facility transfer recommendations',
               'Offline stock-entry with auto-sync',
               'English and Tamil interface',

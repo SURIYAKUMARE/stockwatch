@@ -9,7 +9,9 @@ from backend.models import (
     Alert, AlertEvent, DailyPatient, User, UserScope,
     CanonicalMedicine, MedicineAlias, Facility, Pharmacy,
     InventoryBalance, MedicineBatch, InventoryTransaction,
-    TransferOrder, AvailabilityEnquiry, AuditLog
+    TransferOrder, AvailabilityEnquiry, AuditLog,
+    MedicationSchedule, MedicationReminderLog, MedicineInfo,
+    Notification, Supplier, PurchaseOrder
 )
 from backend.forecast import (
     build_daily_series, compute_ewma, compute_trend, detect_cusum,
@@ -20,21 +22,11 @@ from backend.app.auth import hash_password
 
 def run_seed():
     random.seed(42)
-    init_db()
+    from sqlmodel import SQLModel
+    SQLModel.metadata.drop_all(engine)
+    SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
-        # Clear existing tables cleanly
-        all_models = [
-            AlertEvent, Alert, Transaction, StockLevel, SupplyParam, DailyPatient,
-            UserScope, User, Centre, Medicine, CanonicalMedicine, MedicineAlias,
-            Facility, Pharmacy, InventoryBalance, MedicineBatch, InventoryTransaction,
-            TransferOrder, AvailabilityEnquiry, AuditLog
-        ]
-        for model in all_models:
-            objs = session.exec(select(model)).all()
-            for obj in objs:
-                session.delete(obj)
-        session.commit()
         print("Creating Centres & Facilities...")
 
         centres_data = [
@@ -247,17 +239,18 @@ def run_seed():
             ma = MedicineAlias(medicine_id=mid, alias=alias, normalized_alias=norm_alias, alias_type=atype)
             session.add(ma)
 
-        print("Creating Users for All 6 Roles...")
+        print("Creating Users for All 7 Roles...")
         pw_hash = hash_password("demo123")
         users = [
             User(id="user_patient", username="patient_demo", name="Senthil Kumar (Patient)", email="patient@demo.tn.gov.in", password_hash=pw_hash, role="patient"),
             User(id="user_pharma", username="pharma_demo", name="Suresh Pharmacist (Valparai Medical Store)", email="pharmacist@demo.tn.gov.in", password_hash=pw_hash, role="pharmacist", centre_id=None),
+            User(id="user_phc", username="phc_demo", name="Murugan (PHC Pharmacist, Valparai)", email="phc@demo.tn.gov.in", password_hash=pw_hash, role="facility", centre_id="phc_valparai"),
             User(id="user_chc", username="chc_demo", name="Dr. Anitha (Medical Officer, CHC Pollachi)", email="chc@demo.tn.gov.in", password_hash=pw_hash, role="chc_facility", centre_id="chc_pollachi"),
             User(id="user_district", username="district_demo", name="Dr. Rajesh (District Health Officer, Coimbatore)", email="district@demo.tn.gov.in", password_hash=pw_hash, role="district_officer", centre_id=None),
             User(id="user_state", username="state_demo", name="Dr. Meenakshi (State Health Officer, Tamil Nadu)", email="state@demo.tn.gov.in", password_hash=pw_hash, role="state_officer", centre_id=None),
             User(id="user_national", username="national_demo", name="Dr. V. K. Paul (National Health Mission)", email="national@demo.tn.gov.in", password_hash=pw_hash, role="national_officer", centre_id=None),
             # Legacy users
-            User(id="user_pharm_valparai", username="suresh_pharmacist", name="Suresh (Pharmacist, Valparai)", email="suresh@phc.valparai.gov.in", password_hash=pw_hash, role="pharmacist", centre_id="phc_valparai"),
+            User(id="user_pharm_valparai", username="suresh_pharmacist", name="Suresh (Pharmacist, Valparai)", email="suresh@phc.valparai.gov.in", password_hash=pw_hash, role="facility", centre_id="phc_valparai"),
             User(id="user_block_anaimalai", username="dr_kavitha_bho", name="Dr. Kavitha (Block Health Officer)", email="kavitha@bho.anaimalai.gov.in", password_hash=pw_hash, role="block_officer", centre_id=None),
             User(id="user_dist_cbe", username="dr_rajesh_ddhs", name="Dr. Rajesh (DDHS)", email="rajesh@ddhs.cbe.gov.in", password_hash=pw_hash, role="district_officer", centre_id=None),
         ]
@@ -267,6 +260,7 @@ def run_seed():
         scopes = [
             UserScope(user_id="user_patient", state_id="TN", district_id="coimbatore"),
             UserScope(user_id="user_pharma", state_id="TN", district_id="coimbatore", pharmacy_id="pharma_valparai_01"),
+            UserScope(user_id="user_phc", state_id="TN", district_id="coimbatore", facility_id="phc_valparai"),
             UserScope(user_id="user_chc", state_id="TN", district_id="coimbatore", facility_id="chc_pollachi"),
             UserScope(user_id="user_district", state_id="TN", district_id="coimbatore"),
             UserScope(user_id="user_state", state_id="TN"),
@@ -490,7 +484,7 @@ def run_seed():
         session.add(enq1)
         session.add(enq2)
 
-        # Seed Initial Transfer Order
+        # Seed Initial Transfer Orders demonstrating full lifecycle & officer escalation
         to1 = TransferOrder(
             transfer_reference="TRF-VAL-ALI-01",
             from_owner_type="facility",
@@ -505,7 +499,403 @@ def run_seed():
             created_by="Suresh (Pharmacist, Valparai)",
             notes="Emergency stock transfer for pediatric fever surge"
         )
+        to2 = TransferOrder(
+            transfer_reference="TRF-AUTO-OFFER-02",
+            from_owner_type="pharmacy",
+            from_owner_id="pharma_valparai_01",
+            to_owner_type="facility",
+            to_owner_id="phc_valparai",
+            medicine_id="med_pcm",
+            quantity=150,
+            distance_km=1.2,
+            transit_minutes=8,
+            status="OFFERED",
+            urgency_level="CRITICAL",
+            request_level="TOWN",
+            escalation_level="PHARMACY",
+            current_owner_role="pharmacist",
+            contacted_suppliers_json='["pharma_valparai_01"]',
+            created_by="Smart Redistribution Engine",
+            notes="Automated tier-1 offer to local retail pharmacy"
+        )
+        to3 = TransferOrder(
+            transfer_reference="TRF-RESERVED-03",
+            from_owner_type="facility",
+            from_owner_id="phc_pollachi_rural",
+            to_owner_type="facility",
+            to_owner_id="phc_valparai",
+            medicine_id="med_asv",
+            quantity=5,
+            distance_km=32.4,
+            transit_minutes=55,
+            status="RESERVED",
+            urgency_level="CRITICAL",
+            request_level="DISTRICT",
+            escalation_level="DISTRICT",
+            stock_reserved=True,
+            current_owner_role="district_officer",
+            created_by="Dr. Rajesh (District Health Officer)",
+            notes="Anti-Snake Venom emergency transfer. Stock reserved atomically in inventory balance."
+        )
+        to4 = TransferOrder(
+            transfer_reference="TRF-ESCALATED-04",
+            from_owner_type="facility",
+            from_owner_id="phc_ettimadai",
+            to_owner_type="facility",
+            to_owner_id="phc_valparai",
+            medicine_id="med_amox",
+            quantity=200,
+            distance_km=48.2,
+            transit_minutes=70,
+            status="ESCALATED",
+            urgency_level="HIGH",
+            request_level="DISTRICT",
+            escalation_level="DISTRICT",
+            current_owner_role="district_officer",
+            requires_officer_approval=True,
+            contacted_suppliers_json='["pharma_valparai_01", "pharma_valparai_02", "phc_aliyar"]',
+            rejection_reasons_json='["pharma_valparai_01: Insufficient surplus", "phc_aliyar: Stock reserved for local camp"]',
+            created_by="Smart Redistribution Engine",
+            notes="Town-level search exhausted. Escalation dossier generated for District Health Officer review."
+        )
         session.add(to1)
+        session.add(to2)
+        session.add(to3)
+        session.add(to4)
+
+        # Seed Verified Clinical Drug Monographs (MedicineInfo)
+        med_infos = [
+            MedicineInfo(
+                id="med_pcm",
+                canonical_id="med_pcm",
+                generic_name="Paracetamol",
+                brand_names="Crocin, Dolo-650, Calpol, Pacimol",
+                active_ingredients="Paracetamol IP",
+                strength="500mg",
+                dosage_form="Tablet",
+                route_of_administration="Oral",
+                approved_indications="Analgesic and antipyretic for mild-to-moderate pain, headache, and reduction of pyrexia.",
+                common_side_effects="Generally well-tolerated. Rare nausea, allergic skin reaction.",
+                serious_warnings="Do not exceed maximum daily dosage of 4000mg. Caution in chronic alcoholism or pre-existing hepatic impairment.",
+                contraindications="Severe active hepatic disease or acute liver failure.",
+                drug_interactions="Enzyme inducers may increase toxicity risk. Prolonged regular use may enhance warfarin effect.",
+                storage_instructions="Store below 30°C in a dry place protected from direct sunlight.",
+                prescription_status="OTC",
+                source="National Essential Drugs List (EDL) & CDSCO Formulary"
+            ),
+            MedicineInfo(
+                id="med_pcm_syr",
+                canonical_id="med_pcm_syr",
+                generic_name="Paracetamol Pediatric Oral Suspension",
+                brand_names="Calpol Peadiatric, Crocin 120, T-98",
+                active_ingredients="Paracetamol IP 120mg/5ml",
+                strength="120mg/5ml",
+                dosage_form="Syrup",
+                route_of_administration="Oral",
+                approved_indications="Pediatric relief of mild to moderate pain and febrile conditions including post-immunization pyrexia.",
+                common_side_effects="Occasional stomach upset.",
+                serious_warnings="Always use a calibrated oral measuring syringe or measuring spoon. Do not use household teaspoons.",
+                contraindications="Known hypersensitivity to paracetamol.",
+                drug_interactions="Avoid concomitant use with other paracetamol-containing pediatric preparations.",
+                storage_instructions="Store below 25°C. Do not freeze. Shake well before use.",
+                prescription_status="OTC",
+                source="National Essential Drugs List (EDL) & CDSCO Formulary"
+            ),
+            MedicineInfo(
+                id="med_amox",
+                canonical_id="med_amox",
+                generic_name="Amoxicillin Trihydrate",
+                brand_names="Mox 250, Novamox, Amoxil",
+                active_ingredients="Amoxicillin Trihydrate IP equivalent to Amoxicillin 250mg",
+                strength="250mg",
+                dosage_form="Capsule",
+                route_of_administration="Oral",
+                approved_indications="Bacterial infections of the ear, nose, throat, respiratory tract, genitourinary tract, and skin.",
+                common_side_effects="Diarrhea, nausea, vomiting, skin rashes.",
+                serious_warnings="Severe allergic anaphylaxis possible in penicillin-sensitive patients. Complete the full prescribed course.",
+                contraindications="History of severe penicillin or beta-lactam hypersensitivity.",
+                drug_interactions="May reduce efficacy of oral contraceptives. Excretion reduced by probenecid.",
+                storage_instructions="Store in airtight containers below 25°C in a dry place.",
+                prescription_status="Rx",
+                source="National Essential Drugs List (EDL) & CDSCO Formulary"
+            ),
+            MedicineInfo(
+                id="med_metformin",
+                canonical_id="med_metformin",
+                generic_name="Metformin Hydrochloride",
+                brand_names="Glycomet, Cetapin, Obimet",
+                active_ingredients="Metformin Hydrochloride IP 500mg",
+                strength="500mg",
+                dosage_form="Tablet",
+                route_of_administration="Oral",
+                approved_indications="First-line pharmacotherapy for Type 2 Diabetes Mellitus in adults and children.",
+                common_side_effects="Gastrointestinal distress, flatulence, abdominal pain, metallic taste.",
+                serious_warnings="Risk of lactic acidosis during severe dehydration, sepsis, or acute renal impairment. Take with or after meals.",
+                contraindications="Severe renal impairment (eGFR < 30 mL/min/1.73 m²), acute metabolic acidosis.",
+                drug_interactions="Cationic drugs excreted via renal tubular secretion may interact. Contrast dye requires temporary cessation.",
+                storage_instructions="Store protected from light and moisture below 30°C.",
+                prescription_status="Rx",
+                source="National Essential Drugs List (EDL) & CDSCO Formulary"
+            ),
+            MedicineInfo(
+                id="med_amlodipine",
+                canonical_id="med_amlodipine",
+                generic_name="Amlodipine Besylate",
+                brand_names="Amlong, Stamlo, Norvasc",
+                active_ingredients="Amlodipine Besylate IP 5mg",
+                strength="5mg",
+                dosage_form="Tablet",
+                route_of_administration="Oral",
+                approved_indications="Essential hypertension, chronic stable angina, and vasospastic angina.",
+                common_side_effects="Peripheral edema, headache, flushing, fatigue, dizziness.",
+                serious_warnings="May cause severe hypotension in aortic stenosis. Dose titration required in severe hepatic dysfunction.",
+                contraindications="Severe hypotension, cardiogenic shock.",
+                drug_interactions="CYP3A4 inhibitors (e.g., ketoconazole) increase amlodipine concentration. May increase simvastatin levels.",
+                storage_instructions="Store below 30°C protected from light.",
+                prescription_status="Rx",
+                source="National Essential Drugs List (EDL) & CDSCO Formulary"
+            ),
+            MedicineInfo(
+                id="med_ors",
+                canonical_id="med_ors",
+                generic_name="Oral Rehydration Salts (WHO Formula)",
+                brand_names="Electral, ORS-L, Walyte",
+                active_ingredients="Sodium Chloride, Potassium Chloride, Sodium Citrate, Dextrose Anhydrous",
+                strength="20.5g/sachet",
+                dosage_form="Powder Sachet",
+                route_of_administration="Oral",
+                approved_indications="Prevention and treatment of clinical dehydration associated with acute diarrheal illness.",
+                common_side_effects="Hypernatremia if prepared with insufficient water.",
+                serious_warnings="Dissolve entire sachet in exactly 1 litre of clean drinking water. Discard unused reconstituted solution after 24 hours.",
+                contraindications="Severe persistent vomiting, paralytic ileus, bowel perforation.",
+                drug_interactions="None noted under recommended administration.",
+                storage_instructions="Store in dry place below 30°C. Protect from moisture.",
+                prescription_status="OTC",
+                source="National Essential Drugs List (EDL) & WHO Model Formulary"
+            ),
+            MedicineInfo(
+                id="med_asv",
+                canonical_id="med_asv",
+                generic_name="Anti-Snake Venom Polyvalent (Equine)",
+                brand_names="ASV Serum, Polyvalent Antivenom",
+                active_ingredients="Equine Immunoglobulin fragments neutralizing Cobra, Krait, Russell's Viper, and Saw-scaled Viper venoms",
+                strength="10ml Vial",
+                dosage_form="Injectable Solution",
+                route_of_administration="Intravenous",
+                approved_indications="Emergency neutralization of systemic envenomation from the 'Big Four' venomous Indian snakes.",
+                common_side_effects="Anaphylaxis, pyrogenic chills, urticaria, serum sickness.",
+                serious_warnings="Emergency resuscitation equipment including adrenaline (epinephrine 1:1000) must be immediately available at bedside.",
+                contraindications="No absolute contraindication when life-threatening envenomation is present.",
+                drug_interactions="Do not infuse simultaneously with incompatible colloidal solutions.",
+                storage_instructions="Store in cold chain between 2°C and 8°C. Do not freeze.",
+                prescription_status="Rx",
+                source="National Essential Drugs List (EDL) & CDSCO National Guidelines"
+            )
+        ]
+        for mi in med_infos:
+            session.add(mi)
+
+        # Seed Approved Pharmaceutical Suppliers
+        suppliers = [
+            Supplier(
+                id="sup_tnmsc_cbe",
+                supplier_name="Tamil Nadu Medical Services Corporation (TNMSC) District Depot",
+                contact_person="Thiru. S. Murugesan (Depot Manager)",
+                phone="+91 422 2244101",
+                email="depot.cbe@tnmsc.gov.in",
+                lead_time_days=3,
+                license_number="TN/CBE/GOVT/2018/001",
+                district_id="coimbatore",
+                state_id="TN",
+                is_approved=True
+            ),
+            Supplier(
+                id="sup_kovai_pharma",
+                supplier_name="Kovai Wholesale Pharma & Druggists Network",
+                contact_person="Mr. K. R. Anand (Chief Logistics Officer)",
+                phone="+91 94431 88200",
+                email="orders@kovaipharma.com",
+                lead_time_days=1,
+                license_number="TN/CBE/DL/2021/4890",
+                district_id="coimbatore",
+                state_id="TN",
+                is_approved=True
+            ),
+            Supplier(
+                id="sup_south_india_life",
+                supplier_name="South India Life Sciences Central Warehouse",
+                contact_person="Ms. Lakshmi Narayanan (Institutional Head)",
+                phone="+91 98410 55123",
+                email="institutional@southindialife.in",
+                lead_time_days=5,
+                license_number="TN/CHE/MFG/2015/092",
+                district_id="chennai",
+                state_id="TN",
+                is_approved=True
+            )
+        ]
+        for sup in suppliers:
+            session.add(sup)
+
+        # Seed Purchase Orders
+        pos = [
+            PurchaseOrder(
+                po_reference="PO-2026-TNMSC-001",
+                owner_type="facility",
+                owner_id="phc_valparai",
+                supplier_id="sup_tnmsc_cbe",
+                medicine_id="med_pcm",
+                quantity=3000,
+                unit_price=1.85,
+                status="SUBMITTED",
+                expected_delivery_date=(today + timedelta(days=3)).isoformat(),
+                created_by="Murugan (PHC Pharmacist)"
+            ),
+            PurchaseOrder(
+                po_reference="PO-2026-KOVAI-002",
+                owner_type="pharmacy",
+                owner_id="pharma_valparai_01",
+                supplier_id="sup_kovai_pharma",
+                medicine_id="med_asv",
+                quantity=20,
+                unit_price=450.00,
+                status="IN_TRANSIT",
+                expected_delivery_date=(today + timedelta(days=1)).isoformat(),
+                created_by="Suresh Pharmacist"
+            )
+        ]
+        for po in pos:
+            session.add(po)
+
+        # Seed Patient Medication Schedules & Logs for patient_demo
+        sched1 = MedicationSchedule(
+            id="sched_metformin_01",
+            patient_id="user_patient",
+            medicine_name="Metformin Hydrochloride 500mg",
+            strength="500mg",
+            dosage_form="Tablet",
+            dose_quantity="1 tablet",
+            frequency_per_day=2,
+            schedule_times_json='["08:00", "20:00"]',
+            start_date=(today - timedelta(days=14)).isoformat(),
+            end_date=(today + timedelta(days=76)).isoformat(),
+            prescribed_instructions="Take with water immediately after breakfast and dinner",
+            doctor_name="Dr. Priya Raman, MBBS, MD",
+            status="ACTIVE"
+        )
+        sched2 = MedicationSchedule(
+            id="sched_amlodipine_02",
+            patient_id="user_patient",
+            medicine_name="Amlodipine Besylate 5mg",
+            strength="5mg",
+            dosage_form="Tablet",
+            dose_quantity="1 tablet",
+            frequency_per_day=1,
+            schedule_times_json='["09:00"]',
+            start_date=(today - timedelta(days=14)).isoformat(),
+            end_date=(today + timedelta(days=76)).isoformat(),
+            prescribed_instructions="Take 1 tablet every morning",
+            doctor_name="Dr. Priya Raman, MBBS, MD",
+            status="ACTIVE"
+        )
+        session.add(sched1)
+        session.add(sched2)
+
+        # Seed 7-day adherence logs
+        for d_offset in range(1, 8):
+            log_date = (today - timedelta(days=d_offset)).isoformat()
+            session.add(MedicationReminderLog(
+                schedule_id="sched_metformin_01",
+                patient_id="user_patient",
+                scheduled_time=f"{log_date} 08:00",
+                action="TAKEN",
+                action_timestamp=datetime.now(timezone.utc) - timedelta(days=d_offset, hours=15),
+                notes="Taken on time"
+            ))
+            session.add(MedicationReminderLog(
+                schedule_id="sched_metformin_01",
+                patient_id="user_patient",
+                scheduled_time=f"{log_date} 20:00",
+                action="TAKEN" if d_offset != 3 else "SNOOZED",
+                action_timestamp=datetime.now(timezone.utc) - timedelta(days=d_offset, hours=3),
+                notes="Taken with dinner" if d_offset != 3 else "Delayed 30 mins"
+            ))
+            session.add(MedicationReminderLog(
+                schedule_id="sched_amlodipine_02",
+                patient_id="user_patient",
+                scheduled_time=f"{log_date} 09:00",
+                action="TAKEN",
+                action_timestamp=datetime.now(timezone.utc) - timedelta(days=d_offset, hours=14),
+                notes="Taken on time"
+            ))
+
+        # Today's morning dose taken!
+        session.add(MedicationReminderLog(
+            schedule_id="sched_metformin_01",
+            patient_id="user_patient",
+            scheduled_time=f"{today.isoformat()} 08:00",
+            action="TAKEN",
+            action_timestamp=datetime.now(timezone.utc) - timedelta(hours=2),
+            notes="Morning dose confirmed"
+        ))
+
+        # Seed Notifications across roles
+        notifs = [
+            Notification(
+                user_id="user_patient",
+                target_role="patient",
+                title="Medication Reminder: Evening Dose Due",
+                message="Please take your scheduled Metformin 500mg tablet after dinner (20:00).",
+                category="REMINDER",
+                priority="INFO",
+                is_read=False
+            ),
+            Notification(
+                target_role="pharmacist",
+                title="Low Stock Alert: Paracetamol 500mg",
+                message="PHC Valparai stock has dropped to 80 units (2.1 days of cover). Redistribution recommended.",
+                category="STOCK_ALERT",
+                priority="CRITICAL",
+                is_read=False,
+                action_link="/transfers"
+            ),
+            Notification(
+                target_role="facility",
+                title="Incoming Transfer Offer TRF-AUTO-OFFER-02",
+                message="Valparai Medical Store offered 150 units of Paracetamol 500mg. Please accept or reject.",
+                category="TRANSFER_OFFER",
+                priority="WARNING",
+                is_read=False,
+                action_link="/transfers"
+            ),
+            Notification(
+                target_role="district_officer",
+                title="Shortage Escalation: Amoxicillin at Valparai",
+                message="Hierarchical transfer TRF-ESCALATED-04 requires District Health Officer approval. Local suppliers exhausted.",
+                category="ESCALATION",
+                priority="CRITICAL",
+                is_read=False,
+                action_link="/transfers"
+            ),
+            Notification(
+                target_role="state_officer",
+                title="Monsoon Preparedness: Western Ghats Cluster",
+                message="Monsoon fever surge detected across 3 Coimbatore hill sub-centres. Buffer stocks reviewed.",
+                category="STOCK_ALERT",
+                priority="INFO",
+                is_read=True
+            ),
+            Notification(
+                target_role="national_officer",
+                title="National Essential Drug Index Update",
+                message="Tamil Nadu reports 96.8% essential medicine availability index across primary health facilities.",
+                category="SYSTEM",
+                priority="INFO",
+                is_read=True
+            )
+        ]
+        for n in notifs:
+            session.add(n)
 
         session.commit()
 

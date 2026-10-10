@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   MapPin,
@@ -10,291 +10,667 @@ import {
   Clock,
   CheckCircle2,
   RefreshCw,
+  ExternalLink,
+  ShieldCheck,
+  Calendar,
+  Check,
+  X,
+  BellRing,
+  Pill,
+  BookOpen,
+  Plus
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type { AppScreen } from '../../components/nav/AppShell';
 
-// ─── Demo pharmacy data (clearly labelled as demo) ────────────────────────────
-
-interface DemoPharmacy {
-  id: string;
-  name: string;
+interface PriceComparisonSource {
+  facility_id: string;
+  facility_name: string;
+  facility_type: string;
   address: string;
+  contact_phone: string;
   distance_km: number;
-  phone: string;
-  isVerified: boolean;
-  lastUpdate: string;
-  dataSource: 'demo';
+  lat: number;
+  lng: number;
+  directions_url: string;
+  quantity_available: number;
+  availability_status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+  price_inr: string;
+  unit_price_raw: number;
+  pricing_type: string;
+  is_verified: boolean;
+  data_source: string;
+  last_updated: string;
 }
 
-const DEMO_PHARMACIES: DemoPharmacy[] = [
-  { id: 'ph1', name: 'Valparai Medical Store', address: 'Main Road, Valparai, Coimbatore – 642127', distance_km: 0.4, phone: '+91 98765 43210', isVerified: true, lastUpdate: '20 mins ago', dataSource: 'demo' },
-  { id: 'ph2', name: 'Kovai Medicals — Valparai Hill Top', address: 'Bazaar Jn, Valparai', distance_km: 1.2, phone: '+91 4253 222301', isVerified: true, lastUpdate: '1 hour ago', dataSource: 'demo' },
-  { id: 'ph3', name: 'Aliyar Medical & General Stores', address: 'Aliyar Dam Rd, Anaimalai Block', distance_km: 8.8, phone: '+91 98765 11111', isVerified: true, lastUpdate: '3 hours ago', dataSource: 'demo' },
-  { id: 'ph4', name: 'Thulasi Pharmacies — Pollachi Bazaar', address: 'Nehru St, Pollachi, Coimbatore', distance_km: 14.2, phone: '+91 4259 223450', isVerified: true, lastUpdate: '5 hours ago', dataSource: 'demo' },
-  { id: 'ph5', name: 'Apollo Pharmacy — Coimbatore Central', address: 'Cross Cut Road, Gandhipuram, Coimbatore', distance_km: 42.0, phone: '+91 422 2490111', isVerified: true, lastUpdate: 'Just now', dataSource: 'demo' },
-];
-
-interface DemoMedAvailability {
-  pharmacyId: string;
-  pharmacyName: string;
-  medicine: string;
+interface ClinicalMonograph {
+  id: string;
+  generic_name: string;
+  brand_names: string;
+  active_ingredients: string;
   strength: string;
-  qty: number;
-  freshness: 'recent' | 'stale' | 'unknown';
-  price?: string;
+  dosage_form: string;
+  route_of_administration: string;
+  approved_indications: string;
+  common_side_effects: string;
+  serious_warnings: string;
+  contraindications: string;
+  drug_interactions: string;
+  storage_instructions: string;
+  prescription_status: string;
+  source: string;
 }
 
-const DEMO_AVAILABILITY: DemoMedAvailability[] = [
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Paracetamol', strength: '500mg Tablet', qty: 45, freshness: 'recent', price: '₹2 / strip' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Paracetamol Syrup', strength: '60ml Bottle', qty: 18, freshness: 'recent', price: '₹35 / bottle' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Amoxicillin', strength: '250mg Capsule', qty: 60, freshness: 'recent', price: '₹5 / strip' },
-  { pharmacyId: 'ph3', pharmacyName: 'Aliyar Medical Stores', medicine: 'Amoxicillin', strength: '500mg Capsule', qty: 35, freshness: 'recent', price: '₹8 / strip' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'ORS Sachets', strength: '20.5g WHO Formula', qty: 120, freshness: 'recent', price: '₹5 / sachet' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Zinc Sulfate', strength: '20mg Dispersible Tab', qty: 50, freshness: 'recent', price: '₹3 / strip' },
-  { pharmacyId: 'ph4', pharmacyName: 'Thulasi Pharmacies Pollachi', medicine: 'Metformin', strength: '500mg SR Tablet', qty: 80, freshness: 'recent', price: '₹4 / strip' },
-  { pharmacyId: 'ph3', pharmacyName: 'Aliyar Medical Stores', medicine: 'Iron and Folic Acid', strength: '100mg + 0.5mg Tab', qty: 90, freshness: 'recent', price: 'Free Govt Supply' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Cetirizine', strength: '10mg Tablet', qty: 40, freshness: 'recent', price: '₹2 / strip' },
-  { pharmacyId: 'ph2', pharmacyName: 'Kovai Medicals Valparai', medicine: 'Albendazole', strength: '400mg Chewable Tab', qty: 30, freshness: 'recent', price: '₹6 / tablet' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Anti-Snake Venom', strength: 'Polyvalent 10ml Inj', qty: 8, freshness: 'recent', price: 'Govt Emergency Supply' },
-  { pharmacyId: 'ph4', pharmacyName: 'Thulasi Pharmacies Pollachi', medicine: 'Anti-Rabies Vaccine', strength: '0.5ml IM / ID Vial', qty: 12, freshness: 'recent', price: 'Govt Subsidized' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Amlodipine', strength: '5mg Tablet', qty: 65, freshness: 'recent', price: '₹3 / strip' },
-  { pharmacyId: 'ph3', pharmacyName: 'Aliyar Medical Stores', medicine: 'Azithromycin', strength: '500mg Tablet', qty: 28, freshness: 'recent', price: '₹12 / strip' },
-  { pharmacyId: 'ph1', pharmacyName: 'Valparai Medical Store', medicine: 'Salbutamol Inhaler', strength: '100mcg (200 doses)', qty: 14, freshness: 'recent', price: '₹110 / inhaler' },
-  { pharmacyId: 'ph4', pharmacyName: 'Thulasi Pharmacies Pollachi', medicine: 'Atropine Sulfate', strength: '0.6mg/ml Injection', qty: 0, freshness: 'stale', price: 'Out of Stock' },
-];
-
-const FRESHNESS_LABEL: Record<string, { label: string; color: string }> = {
-  recent: { label: 'Recently verified', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-  stale: { label: 'May be outdated', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-  unknown: { label: 'Unknown freshness', color: 'text-gray-600 bg-gray-50 border-gray-200' },
-};
+interface MedicationScheduleItem {
+  id: string;
+  medicine_name: string;
+  strength: string;
+  dosage_form: string;
+  dose_quantity: string;
+  frequency_per_day: number;
+  schedule_times: string[];
+  times_with_status: { time: string; status: 'TAKEN' | 'SKIPPED' | 'SNOOZED' | 'PENDING' }[];
+  start_date: string;
+  end_date?: string;
+  prescribed_instructions: string;
+  doctor_name?: string;
+  status: string;
+}
 
 interface PatientDashboardProps {
-  activeScreen: AppScreen;
+  activeScreen?: AppScreen;
   lang: Language;
 }
 
 export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [savedPharmacies, setSavedPharmacies] = useState<string[]>(['ph1']);
-
   const isTa = lang === 'ta';
 
-  const filteredAvailability = DEMO_AVAILABILITY.filter(a =>
-    !searchQuery || a.medicine.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.strength.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Medicine Search & Price Comparison State
+  const [searchQuery, setSearchQuery] = useState('Paracetamol');
+  const [selectedMedId, setSelectedMedId] = useState('med_pcm');
+  const [comparisonData, setComparisonData] = useState<{
+    medicine_name: string;
+    strength: string;
+    dosage_form: string;
+    sources: PriceComparisonSource[];
+  } | null>(null);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
-  const toggleSave = (id: string) =>
-    setSavedPharmacies(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  // Clinical Monograph Modal
+  const [selectedMonograph, setSelectedMonograph] = useState<ClinicalMonograph | null>(null);
+  const [isLoadingMonograph, setIsLoadingMonograph] = useState(false);
 
-  if (activeScreen === 'saved_pharmacies') {
-    const saved = DEMO_PHARMACIES.filter(p => savedPharmacies.includes(p.id));
-    return (
-      <div className="p-6 max-w-3xl mx-auto space-y-4">
-        <h2 className="text-base font-bold text-[#14202B]">
-          {isTa ? 'சேமித்த மருந்தகங்கள்' : 'Saved Pharmacies'}
-        </h2>
-        {saved.length === 0 ? (
-          <div className="text-xs text-[#5B6B7A] text-center py-12">No saved pharmacies yet.</div>
-        ) : saved.map(p => <PharmacyCard key={p.id} pharmacy={p} isSaved onToggleSave={toggleSave} isTa={isTa} />)}
-      </div>
-    );
-  }
+  // Medication Reminders State
+  const [reminders, setReminders] = useState<MedicationScheduleItem[]>([]);
+  const [adherenceReport, setAdherenceReport] = useState<{
+    adherence_percentage: number;
+    current_streak_days: number;
+    doses_taken: number;
+    doses_skipped: number;
+    doses_snoozed: number;
+    adherence_rating: string;
+  } | null>(null);
+  const [isLoadingReminders, setIsLoadingReminders] = useState(false);
+  const [showAddReminderModal, setShowAddReminderModal] = useState(false);
 
-  if (activeScreen === 'nearby_pharmacies') {
-    return (
-      <div className="p-6 max-w-3xl mx-auto space-y-4">
+  // New Reminder Form State
+  const [newMedName, setNewMedName] = useState('');
+  const [newDose, setNewDose] = useState('1 tablet');
+  const [newTime, setNewTime] = useState('08:00');
+  const [newInstructions, setNewInstructions] = useState('Take with water after breakfast');
+
+  // Fetch Price Comparison Data
+  const fetchPriceComparison = async (medQuery: string) => {
+    setIsLoadingSearch(true);
+    try {
+      const res = await fetch(`/api/patient/medicines/compare?medicine_name=${encodeURIComponent(medQuery)}`);
+      if (res.ok) {
+        const json = await res.json();
+        setComparisonData(json);
+      }
+    } catch (err) {
+      console.error('Failed to fetch price comparison', err);
+    } finally {
+      setIsLoadingSearch(false);
+    }
+  };
+
+  // Fetch Verified Clinical Monograph
+  const fetchMonograph = async (medId: string) => {
+    setIsLoadingMonograph(true);
+    try {
+      const res = await fetch(`/api/patient/medicines/${medId}/info`);
+      if (res.ok) {
+        const json = await res.json();
+        setSelectedMonograph(json);
+      }
+    } catch (err) {
+      console.error('Failed to fetch monograph', err);
+    } finally {
+      setIsLoadingMonograph(false);
+    }
+  };
+
+  // Fetch Reminders & Adherence
+  const fetchRemindersData = async () => {
+    setIsLoadingReminders(true);
+    try {
+      const [remRes, adhRes] = await Promise.all([
+        fetch('/api/patient/reminders'),
+        fetch('/api/patient/adherence')
+      ]);
+      if (remRes.ok) {
+        const remJson = await remRes.json();
+        setReminders(remJson.schedules || []);
+      }
+      if (adhRes.ok) {
+        const adhJson = await adhRes.json();
+        setAdherenceReport(adhJson);
+      }
+    } catch (err) {
+      console.error('Failed to fetch reminders data', err);
+    } finally {
+      setIsLoadingReminders(false);
+    }
+  };
+
+  // Handle reminder action: TAKEN, SKIPPED, SNOOZED
+  const handleReminderAction = async (scheduleId: string, time: string, action: 'TAKEN' | 'SKIPPED' | 'SNOOZED') => {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const scheduledTime = `${todayStr} ${time}`;
+      const res = await fetch(`/api/patient/reminders/${scheduleId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, scheduled_time: scheduledTime })
+      });
+      if (res.ok) {
+        await fetchRemindersData();
+      }
+    } catch (err) {
+      console.error('Failed to log reminder action', err);
+    }
+  };
+
+  // Create new medication reminder
+  const handleCreateReminder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMedName.trim()) return;
+
+    try {
+      const res = await fetch('/api/patient/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicine_name: newMedName,
+          dose_quantity: newDose,
+          frequency_per_day: 1,
+          schedule_times: [newTime],
+          start_date: new Date().toISOString().split('T')[0],
+          prescribed_instructions: newInstructions
+        })
+      });
+      if (res.ok) {
+        setShowAddReminderModal(false);
+        setNewMedName('');
+        await fetchRemindersData();
+      }
+    } catch (err) {
+      console.error('Failed to create reminder', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPriceComparison(searchQuery);
+    fetchRemindersData();
+  }, []);
+
+  return (
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-6">
+      {/* ── Subheader / Quick Mode Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#E3E8EE] shadow-xs">
         <div>
-          <h2 className="text-base font-bold text-[#14202B]">
-            {isTa ? 'அருகிலுள்ள மருந்தகங்கள்' : 'Nearby Participating Pharmacies'}
-          </h2>
-          <DemoDataBanner isTa={isTa} />
+          <h1 className="text-lg font-bold text-[#14202B] flex items-center gap-2">
+            <Pill className="text-[#0F6B6B]" size={20} />
+            {isTa ? 'நோயாளி உதவி மையம் & மருந்து வழிகாட்டி' : 'Patient Care & Medicine Availability Network'}
+          </h1>
+          <p className="text-xs text-[#5B6B7A] mt-0.5">
+            {isTa
+              ? 'அருகிலுள்ள மருந்தகங்கள், விலைகள், கூகிள் மேப்ஸ் வழிகள் மற்றும் உங்கள் மருந்து நினைவூட்டல்கள்.'
+              : 'Search nearby verified pharmacies, compare prices, get Google Maps directions, and track your daily prescriptions.'}
+          </p>
         </div>
-        {DEMO_PHARMACIES.map(p => (
-          <PharmacyCard key={p.id} pharmacy={p} isSaved={savedPharmacies.includes(p.id)} onToggleSave={toggleSave} isTa={isTa} />
-        ))}
-      </div>
-    );
-  }
 
-  if (activeScreen === 'my_enquiries') {
-    const demoEnquiries = [
-      { id: 'enq-01', medicine: 'Paracetamol 500mg (2 strips)', pharmacy: 'Valparai Medical Store', status: 'CONFIRMED', time: 'Today, 10:30 AM', note: 'Reserved at front counter for pickup. Pharmacist verified stock.' },
-      { id: 'enq-02', medicine: 'Salbutamol Inhaler (1 inhaler)', pharmacy: 'Valparai Medical Store', status: 'COMPLETED', time: 'Yesterday, 4:15 PM', note: 'Collected successfully by patient.' },
-      { id: 'enq-03', medicine: 'Amoxicillin 250mg (1 strip)', pharmacy: 'Thulasi Pharmacies Pollachi', status: 'PENDING', time: 'Today, 2:00 PM', note: 'Waiting for pharmacist stock confirmation.' },
-    ];
-    return (
-      <div className="p-6 max-w-3xl mx-auto space-y-4">
-        <h2 className="text-base font-bold text-[#14202B]">{isTa ? 'என் கேள்விகள்' : 'My Previous Enquiries'}</h2>
-        <div className="space-y-3">
-          {demoEnquiries.map(e => (
-            <div key={e.id} className="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-[#14202B]">{e.medicine}</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  e.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                  e.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                  'bg-amber-100 text-amber-700 border border-amber-200'
-                }`}>
-                  {e.status}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-[#5B6B7A]">
-                <span className="font-semibold text-[#0F6B6B]">{e.pharmacy}</span>
-                <span>{e.time}</span>
-              </div>
-              <div className="text-[11px] text-[#5B6B7A] bg-[#F7F9FB] rounded-lg p-2 border border-[#E3E8EE]">
-                ℹ {e.note}
-              </div>
-            </div>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchMonograph('med_pcm')}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#E3E8EE] text-[#14202B] hover:bg-[#F7F9FB] flex items-center gap-1.5 transition-colors"
+          >
+            <BookOpen size={14} className="text-[#0F6B6B]" />
+            <span>Drug Monographs</span>
+          </button>
+          <button
+            onClick={() => setShowAddReminderModal(true)}
+            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs transition-colors"
+          >
+            <Plus size={14} />
+            <span>Add Reminder</span>
+          </button>
         </div>
       </div>
-    );
-  }
 
-  // Default: medicine search
-  return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-base font-bold text-[#14202B]">
-          {isTa ? 'மருந்து கிடைக்கும் இடத்தை தேடுக' : 'Find Medicine Availability'}
-        </h2>
-        <p className="text-xs text-[#5B6B7A] mt-0.5">
-          {isTa
-            ? 'அருகிலுள்ள மருந்தகங்களில் மருந்து கிடைக்கிறதா என்று பாருங்கள்.'
-            : 'Check which nearby pharmacies have your medicine in stock.'}
-        </p>
-        <DemoDataBanner isTa={isTa} />
-      </div>
-
-      {/* Search */}
-      <div className="relative max-w-xl">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5B6B7A]" />
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder={isTa ? 'மருந்து பெயரை தேடுங்கள்…' : 'Search medicine name, brand, or ingredient…'}
-          className="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-[#E3E8EE] bg-white text-[#14202B] focus:outline-none focus:ring-2 focus:ring-[#0F6B6B] shadow-sm"
-        />
-      </div>
-
-      {/* Availability cards */}
-      <div className="space-y-3">
-        {filteredAvailability.length === 0 ? (
-          <div className="bg-white border border-[#E3E8EE] rounded-xl p-10 text-center text-xs text-[#5B6B7A]">
-            No results for "{searchQuery}". Try a different medicine name.
-          </div>
-        ) : filteredAvailability.map((a, i) => {
-          const f = FRESHNESS_LABEL[a.freshness];
-          return (
-            <div key={i} className="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-[#14202B]">{a.medicine}</h3>
-                  <div className="text-xs text-[#5B6B7A]">{a.strength}</div>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${f.color}`}>
-                  {f.label}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-[#5B6B7A]">
-                  <MapPin size={13} className="text-[#0F6B6B]" />
-                  <span className="font-semibold text-[#14202B]">{a.pharmacyName}</span>
-                </div>
-                {a.price && (
-                  <span className="font-semibold text-[#0F6B6B]">{a.price}</span>
-                )}
-              </div>
-
-              {a.qty > 0 ? (
-                <div className="flex items-center gap-2 text-xs">
-                  <CheckCircle2 size={13} className="text-emerald-600" />
-                  <span className="text-emerald-700 font-semibold">
-                    {isTa ? `${a.qty} யூனிட் கிடைக்கிறது (டெமோ தரவு)` : `${a.qty} units reported in stock (Demo data)`}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-xs">
-                  <AlertTriangle size={13} className="text-amber-600" />
-                  <span className="text-amber-800 font-semibold">
-                    {isTa ? 'இருப்பு இல்லை என தெரிவிக்கப்பட்டுள்ளது' : 'Reported as out of stock'}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-1 border-t border-[#E3E8EE]">
-                <button className="text-xs font-semibold text-[#0F6B6B] hover:underline flex items-center gap-1">
-                  <Phone size={12} />
-                  {isTa ? 'மருந்தகத்தை தொடர்பு கொள்' : 'Contact Pharmacy'}
-                </button>
-                <button className="text-xs text-[#5B6B7A] hover:text-[#0F6B6B] flex items-center gap-1">
-                  <Clock size={12} />
-                  {isTa ? 'உறுதிப்படுத்தலை கோரு' : 'Request confirmation'}
-                </button>
-              </div>
+      {/* ── Adherence Tracker Strip ── */}
+      {adherenceReport && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl p-4">
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider">Adherence Rate</span>
+            <div className="text-xl font-extrabold text-[#0F6B6B]">
+              {adherenceReport.adherence_percentage}%
             </div>
-          );
-        })}
-      </div>
-
-      {/* Disclaimer */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-2.5 text-xs text-amber-800">
-        <Info size={15} className="text-amber-500 shrink-0 mt-0.5" />
-        <p className="leading-relaxed">
-          {isTa
-            ? 'இருப்பு தகவல் காலதாமதமாக இருக்கலாம். மருந்தகத்தை தொடர்பு கொண்டு உறுதிப்படுத்திக்கொள்ளுங்கள். பரிந்துரைக்கப்பட்ட மருந்துகளுக்கு மருத்துவரின் ஆலோசனை பெறவும்.'
-            : 'Stock information may be delayed. Always confirm availability directly with the pharmacy before travelling. Consult a qualified doctor for prescription medicines. Never rely solely on this app for medical decisions.'}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function DemoDataBanner({ isTa }: { isTa: boolean }) {
-  return (
-    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 w-fit font-semibold">
-      <AlertTriangle size={11} />
-      {isTa ? 'டெமோ தரவு — உண்மையான இருப்பு அல்ல' : 'Demo data — not real pharmacy inventory'}
-    </div>
-  );
-}
-
-function PharmacyCard({
-  pharmacy, isSaved, onToggleSave, isTa,
-}: { pharmacy: DemoPharmacy; isSaved: boolean; onToggleSave: (id: string) => void; isTa: boolean }) {
-  return (
-    <div className="bg-white border border-[#E3E8EE] rounded-xl p-4 shadow-sm space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-[#14202B]">{pharmacy.name}</h3>
-            {pharmacy.isVerified && (
-              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
-                {isTa ? 'சரிபார்க்கப்பட்டது' : 'Verified'}
-              </span>
-            )}
-            <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-semibold">
-              Demo
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-sm">
+              {adherenceReport.adherence_rating}
             </span>
           </div>
-          <div className="text-xs text-[#5B6B7A] mt-0.5">{pharmacy.address}</div>
+
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider">Current Streak</span>
+            <div className="text-xl font-extrabold text-[#14202B]">
+              {adherenceReport.current_streak_days} Days
+            </div>
+            <span className="text-[10px] text-[#5B6B7A]">Consistent medication</span>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider">Doses Taken</span>
+            <div className="text-xl font-extrabold text-emerald-700">
+              {adherenceReport.doses_taken}
+            </div>
+            <span className="text-[10px] text-[#5B6B7A]">Confirmed on time</span>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider">Skipped / Snoozed</span>
+            <div className="text-xl font-extrabold text-amber-700">
+              {adherenceReport.doses_skipped + adherenceReport.doses_snoozed}
+            </div>
+            <span className="text-[10px] text-[#5B6B7A]">{adherenceReport.doses_snoozed} snoozed · {adherenceReport.doses_skipped} missed</span>
+          </div>
         </div>
-        <button onClick={() => onToggleSave(pharmacy.id)} className="text-[#5B6B7A] hover:text-amber-500 transition-colors">
-          {isSaved ? <Star size={16} className="text-amber-400 fill-amber-400" /> : <StarOff size={16} />}
-        </button>
+      )}
+
+      {/* ── Medication Reminders Section ── */}
+      <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-[#0F6B6B]" size={18} />
+            <h2 className="text-sm font-bold text-[#14202B]">
+              {isTa ? 'இன்றைய மருந்து அட்டவணை' : "Today's Medication Schedule & Reminders"}
+            </h2>
+          </div>
+          <span className="text-xs text-[#5B6B7A] font-medium">
+            {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        </div>
+
+        {reminders.length === 0 ? (
+          <div className="text-center py-6 text-xs text-[#5B6B7A]">
+            No scheduled medications for today. Click "Add Reminder" to set up your prescription schedule.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {reminders.map((sched) => (
+              <div key={sched.id} className="border border-[#E3E8EE] rounded-xl p-4 bg-[#F7F9FB] space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#14202B]">{sched.medicine_name}</h3>
+                    <p className="text-xs text-[#5B6B7A]">{sched.dose_quantity} · {sched.prescribed_instructions}</p>
+                    {sched.doctor_name && (
+                      <p className="text-[10px] text-teal-800 font-semibold mt-0.5">Prescribed by {sched.doctor_name}</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-[#0F6B6B]">
+                    Active
+                  </span>
+                </div>
+
+                <div className="space-y-2 pt-1 border-t border-[#E3E8EE]">
+                  {sched.times_with_status.map((t, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-[#E3E8EE] text-xs">
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} className="text-[#5B6B7A]" />
+                        <span className="font-bold text-[#14202B]">{t.time}</span>
+                      </div>
+
+                      {t.status === 'TAKEN' ? (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <Check size={12} /> Taken
+                        </span>
+                      ) : t.status === 'SKIPPED' ? (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-200">
+                          <X size={12} /> Skipped
+                        </span>
+                      ) : t.status === 'SNOOZED' ? (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          <Clock size={12} /> Snoozed (+30m)
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleReminderAction(sched.id, t.time, 'TAKEN')}
+                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-md transition-colors flex items-center gap-1"
+                          >
+                            <Check size={11} /> Take
+                          </button>
+                          <button
+                            onClick={() => handleReminderAction(sched.id, t.time, 'SNOOZED')}
+                            className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded-md transition-colors flex items-center gap-1"
+                          >
+                            <BellRing size={11} /> Snooze
+                          </button>
+                          <button
+                            onClick={() => handleReminderAction(sched.id, t.time, 'SKIPPED')}
+                            className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-[10px] rounded-md transition-colors"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-4 text-xs text-[#5B6B7A]">
-        <span className="flex items-center gap-1"><MapPin size={12} className="text-[#0F6B6B]" />{pharmacy.distance_km} km</span>
-        <span className="flex items-center gap-1"><Phone size={12} />{pharmacy.phone}</span>
-        <span className="flex items-center gap-1"><Clock size={12} />Updated {pharmacy.lastUpdate}</span>
+
+      {/* ── Medicine Search & Price Comparison Finder ── */}
+      <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+        <div>
+          <h2 className="text-sm font-bold text-[#14202B] flex items-center gap-2">
+            <Search className="text-[#0F6B6B]" size={16} />
+            <span>Medicine Availability & Price Comparison (Google Maps Integrated)</span>
+          </h2>
+          <p className="text-xs text-[#5B6B7A] mt-0.5">
+            Compare prices and real-time availability across retail chemists and government PHCs with turn-by-turn directions.
+          </p>
+        </div>
+
+        {/* Search Bar & Quick Pills */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5B6B7A]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchPriceComparison(searchQuery)}
+              placeholder="Search by generic, brand (e.g., Dolo, Metformin, Amoxil)..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-[#E3E8EE] focus:outline-hidden focus:ring-1 focus:ring-[#0F6B6B]"
+            />
+          </div>
+          <button
+            onClick={() => fetchPriceComparison(searchQuery)}
+            disabled={isLoadingSearch}
+            className="px-4 py-2.5 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            {isLoadingSearch ? <RefreshCw size={14} className="animate-spin" /> : <Search size={14} />}
+            <span>Compare Availability</span>
+          </button>
+        </div>
+
+        {/* Quick EDL Medicine Pills */}
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <span className="text-[11px] font-semibold text-[#5B6B7A] mr-1">Popular EDL Drugs:</span>
+          {['Paracetamol', 'Metformin', 'Amoxicillin', 'Amlodipine', 'ORS', 'Azithromycin'].map((m) => (
+            <button
+              key={m}
+              onClick={() => {
+                setSearchQuery(m);
+                fetchPriceComparison(m);
+              }}
+              className="px-2.5 py-1 text-[11px] rounded-full border border-[#E3E8EE] bg-[#F7F9FB] hover:border-[#0F6B6B] hover:text-[#0F6B6B] text-[#5B6B7A] font-medium transition-colors"
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        {/* Price & Availability Comparison Table */}
+        {comparisonData && (
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between bg-teal-50/70 p-3 rounded-lg border border-teal-100">
+              <div>
+                <span className="text-xs font-bold text-[#14202B]">{comparisonData.medicine_name}</span>
+                <span className="text-xs text-[#5B6B7A] ml-2">({comparisonData.strength} · {comparisonData.dosage_form})</span>
+              </div>
+              <button
+                onClick={() => fetchMonograph(selectedMedId || 'med_pcm')}
+                className="text-xs text-[#0F6B6B] hover:underline font-bold flex items-center gap-1"
+              >
+                <BookOpen size={13} />
+                <span>Clinical Drug Monograph</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto border border-[#E3E8EE] rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F7F9FB] border-b border-[#E3E8EE] text-[#5B6B7A] uppercase text-[10px] tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-2.5 px-4">Facility / Pharmacy</th>
+                    <th className="py-2.5 px-3">Distance</th>
+                    <th className="py-2.5 px-3">Availability</th>
+                    <th className="py-2.5 px-3">Price</th>
+                    <th className="py-2.5 px-3">Verified Source</th>
+                    <th className="py-2.5 px-4 text-right">Directions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E3E8EE]">
+                  {comparisonData.sources.map((s) => (
+                    <tr key={s.facility_id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-[#14202B]">{s.facility_name}</div>
+                        <div className="text-[11px] text-[#5B6B7A]">{s.address}</div>
+                      </td>
+                      <td className="py-3 px-3 tabular-nums font-semibold text-[#14202B]">
+                        {s.distance_km} km
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          s.availability_status === 'IN_STOCK' ? 'bg-emerald-100 text-emerald-800' :
+                          s.availability_status === 'LOW_STOCK' ? 'bg-amber-100 text-amber-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {s.availability_status === 'IN_STOCK' ? `In Stock (${s.quantity_available})` :
+                           s.availability_status === 'LOW_STOCK' ? `Low Stock (${s.quantity_available})` :
+                           'Out of Stock'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-[#0F6B6B]">{s.price_inr}</div>
+                        <div className="text-[10px] text-[#5B6B7A]">{s.pricing_type}</div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
+                          <ShieldCheck size={13} />
+                          {s.is_verified ? 'Verified Partner' : 'Govt PHC'}
+                        </span>
+                        <span className="text-[10px] text-[#5B6B7A] block">{s.last_updated}</span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <a
+                          href={s.directions_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0F6B6B]/10 hover:bg-[#0F6B6B]/20 text-[#0F6B6B] font-bold text-[11px] transition-colors"
+                        >
+                          <Navigation size={12} />
+                          <span>Google Maps</span>
+                          <ExternalLink size={10} />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Verified Drug Monograph Modal ── */}
+      {selectedMonograph && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-[#E3E8EE] animate-in fade-in duration-200">
+            <div className="p-5 border-b border-[#E3E8EE] flex items-center justify-between">
+              <div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  selectedMonograph.prescription_status === 'OTC' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                }`}>
+                  {selectedMonograph.prescription_status} Medication
+                </span>
+                <h3 className="text-base font-bold text-[#14202B] mt-1">{selectedMonograph.generic_name}</h3>
+                <p className="text-xs text-[#5B6B7A]">Common Brands: {selectedMonograph.brand_names}</p>
+              </div>
+              <button
+                onClick={() => setSelectedMonograph(null)}
+                className="p-1 rounded-lg hover:bg-gray-100 text-[#5B6B7A]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4 text-xs text-[#14202B]">
+              <div className="grid grid-cols-2 gap-3 bg-[#F7F9FB] p-3 rounded-xl border border-[#E3E8EE]">
+                <div>
+                  <span className="text-[10px] font-bold text-[#5B6B7A] uppercase">Strength & Dosage Form</span>
+                  <div className="font-semibold">{selectedMonograph.strength} · {selectedMonograph.dosage_form}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-[#5B6B7A] uppercase">Route of Administration</span>
+                  <div className="font-semibold">{selectedMonograph.route_of_administration}</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#0F6B6B] mb-1">Approved Clinical Indications</h4>
+                <p className="leading-relaxed text-[#5B6B7A]">{selectedMonograph.approved_indications}</p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-amber-700 mb-1">Common Side Effects</h4>
+                <p className="leading-relaxed text-[#5B6B7A]">{selectedMonograph.common_side_effects}</p>
+              </div>
+
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
+                <h4 className="font-bold text-rose-800 mb-1 flex items-center gap-1.5">
+                  <AlertTriangle size={14} />
+                  <span>Important Warnings & Precautions</span>
+                </h4>
+                <p className="leading-relaxed text-rose-900">{selectedMonograph.serious_warnings}</p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-red-700 mb-1">Contraindications</h4>
+                <p className="leading-relaxed text-[#5B6B7A]">{selectedMonograph.contraindications}</p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#14202B] mb-1">Storage Instructions</h4>
+                <p className="leading-relaxed text-[#5B6B7A]">{selectedMonograph.storage_instructions}</p>
+              </div>
+
+              <div className="text-[10px] text-[#5B6B7A] pt-2 border-t border-[#E3E8EE] italic">
+                Source: {selectedMonograph.source}. Information verified against CDSCO and National EDL standards.
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-[#E3E8EE] bg-[#F7F9FB] flex justify-end">
+              <button
+                onClick={() => setSelectedMonograph(null)}
+                className="px-4 py-2 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold text-xs rounded-xl"
+              >
+                Close Monograph
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Reminder Modal ── */}
+      {showAddReminderModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-[#E3E8EE] p-5 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E3E8EE]">
+              <h3 className="text-sm font-bold text-[#14202B]">Add Medication Reminder</h3>
+              <button onClick={() => setShowAddReminderModal(false)} className="text-[#5B6B7A]">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateReminder} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Medicine Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Metformin 500mg, Cetirizine"
+                  value={newMedName}
+                  onChange={(e) => setNewMedName(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#0F6B6B]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Dose Quantity</label>
+                  <input
+                    type="text"
+                    value={newDose}
+                    onChange={(e) => setNewDose(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#0F6B6B]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Time of Day</label>
+                  <input
+                    type="time"
+                    value={newTime}
+                    onChange={(e) => setNewTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#0F6B6B]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Instructions</label>
+                <input
+                  type="text"
+                  value={newInstructions}
+                  onChange={(e) => setNewInstructions(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg focus:outline-hidden focus:ring-1 focus:ring-[#0F6B6B]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#E3E8EE]">
+                <button
+                  type="button"
+                  onClick={() => setShowAddReminderModal(false)}
+                  className="px-3 py-2 border border-[#E3E8EE] text-[#5B6B7A] font-semibold rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold rounded-lg shadow-xs"
+                >
+                  Save Reminder
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

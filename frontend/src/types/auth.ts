@@ -71,15 +71,27 @@ const pharmaAccount = {
   isDemo: true,
 };
 
-const chcAccount = {
-  id: 'demo_fac_01',
-  name: 'Dr. Priya Facility',
-  email: 'chc@demo.tn.gov.in',
+const phcAccount = {
+  id: 'demo_phc_01',
+  name: 'Murugan (PHC Pharmacist)',
+  email: 'phc@demo.tn.gov.in',
   password: 'demo123',
   role: 'facility' as const,
   scopeId: 'phc_valparai',
   scopeName: 'PHC Valparai',
-  avatarInitials: 'PF',
+  avatarInitials: 'MP',
+  isDemo: true,
+};
+
+const chcAccount = {
+  id: 'demo_chc_01',
+  name: 'Dr. Anitha (CHC Officer)',
+  email: 'chc@demo.tn.gov.in',
+  password: 'demo123',
+  role: 'chc_facility' as const,
+  scopeId: 'chc_pollachi',
+  scopeName: 'CHC Pollachi',
+  avatarInitials: 'AP',
   isDemo: true,
 };
 
@@ -122,6 +134,7 @@ export const DEMO_ACCOUNTS: Record<string, AuthUser & { password: string }> = {
   // Username keys
   'patient_demo': patientAccount,
   'pharma_demo': pharmaAccount,
+  'phc_demo': phcAccount,
   'chc_demo': chcAccount,
   'district_demo': districtAccount,
   'state_demo': stateAccount,
@@ -130,6 +143,7 @@ export const DEMO_ACCOUNTS: Record<string, AuthUser & { password: string }> = {
   // Gov email keys
   'patient@demo.tn.gov.in': patientAccount,
   'pharmacist@demo.tn.gov.in': pharmaAccount,
+  'phc@demo.tn.gov.in': phcAccount,
   'chc@demo.tn.gov.in': chcAccount,
   'district@demo.tn.gov.in': districtAccount,
   'state@demo.tn.gov.in': stateAccount,
@@ -138,7 +152,9 @@ export const DEMO_ACCOUNTS: Record<string, AuthUser & { password: string }> = {
   // Stockwatch email keys
   'patient@demo.stockwatch': patientAccount,
   'pharmacist@demo.stockwatch': pharmaAccount,
-  'facility@demo.stockwatch': chcAccount,
+  'phc@demo.stockwatch': phcAccount,
+  'facility@demo.stockwatch': phcAccount,
+  'chc@demo.stockwatch': chcAccount,
   'district@demo.stockwatch': districtAccount,
   'state@demo.stockwatch': stateAccount,
   'national@demo.stockwatch': nationalAccount,
@@ -146,7 +162,8 @@ export const DEMO_ACCOUNTS: Record<string, AuthUser & { password: string }> = {
   // Short role aliases
   'patient': patientAccount,
   'pharmacist': pharmaAccount,
-  'facility': chcAccount,
+  'phc': phcAccount,
+  'facility': phcAccount,
   'chc': chcAccount,
   'district': districtAccount,
   'state': stateAccount,

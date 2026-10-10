@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ];
     }
 
-    if (role === 'chc_facility') {
+    if (role === 'chc_facility' || role === 'facility') {
       return [
         {
           id: 'facility_dashboard' as ScreenId,

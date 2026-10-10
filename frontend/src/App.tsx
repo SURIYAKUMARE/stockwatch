@@ -12,6 +12,7 @@ import { LandingPage } from './components/LandingPage';
 import { LoginModal } from './components/LoginModal';
 import { RegisterModal } from './components/RegisterModal';
 import { PatientFinder } from './components/PatientFinder';
+import { PatientDashboard } from './pages/dashboards/PatientDashboard';
 import { PharmacyDashboard } from './components/PharmacyDashboard';
 import { FacilityDashboard } from './components/FacilityDashboard';
 import { StateDashboard } from './components/StateDashboard';
@@ -56,6 +57,15 @@ const DEMO_USERS: Record<UserRole, AuthUser> = {
     role: 'chc_facility',
     centre_id: 'chc_pollachi',
     scopes: { state_id: 'TN', district_id: 'coimbatore', facility_id: 'chc_pollachi' }
+  },
+  facility: {
+    id: 'usr_phc_demo',
+    username: 'phc_demo',
+    name: 'R. Karpagam, D.Pharm (PHC Pharmacist)',
+    email: 'phc.valparai@phc.tn.gov.in',
+    role: 'facility',
+    centre_id: 'phc_valparai',
+    scopes: { state_id: 'TN', district_id: 'coimbatore', facility_id: 'phc_valparai' }
   },
   district_officer: {
     id: 'usr_district_demo',
@@ -227,7 +237,7 @@ export function App() {
       setActiveScreen('patient_finder');
     } else if (role === 'pharmacist') {
       setActiveScreen('pharmacy_dashboard');
-    } else if (role === 'chc_facility') {
+    } else if (role === 'chc_facility' || role === 'facility') {
       setActiveScreen('facility_dashboard');
     } else if (role === 'state_officer') {
       setActiveScreen('state_dashboard');
@@ -249,7 +259,7 @@ export function App() {
       setActiveScreen('patient_finder');
     } else if (user.role === 'pharmacist') {
       setActiveScreen('pharmacy_dashboard');
-    } else if (user.role === 'chc_facility') {
+    } else if (user.role === 'chc_facility' || user.role === 'facility') {
       setActiveScreen('facility_dashboard');
     } else if (user.role === 'state_officer') {
       setActiveScreen('state_dashboard');
@@ -371,9 +381,9 @@ export function App() {
 
         {/* Active Screen View */}
         <main className="flex-1 overflow-y-auto">
-          {/* Public / Patient Finder */}
+          {/* Public / Patient Finder & Care Dashboard */}
           {activeScreen === 'patient_finder' && (
-            <PatientFinder lang={lang} />
+            <PatientDashboard lang={lang} />
           )}
 
           {/* Pharmacist Portal */}

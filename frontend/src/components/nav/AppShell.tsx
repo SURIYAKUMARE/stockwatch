@@ -91,15 +91,25 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
       ];
     case 'facility':
       return [
-        { id: 'command_center', label: 'Command Center', labelTa: 'கட்டளை மையம்', icon: LayoutDashboard },
-        { id: 'priority_alerts', label: 'Priority Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
+        { id: 'command_center', label: 'PHC Dashboard', labelTa: 'கட்டளை மையம்', icon: LayoutDashboard },
+        { id: 'priority_alerts', label: 'Stock Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'stock_entry_facility', label: 'Stock Entry', labelTa: 'இருப்பு பதிவு', icon: ClipboardPen,
           badge: pendingSync > 0 ? `${pendingSync} sync` : null, badgeColor: 'bg-orange-100 text-orange-700' },
-        { id: 'centre_detail', label: 'Centre Detail', labelTa: 'மைய விவரம்', icon: Activity },
+        { id: 'centre_detail', label: 'Centre Inventory', labelTa: 'மைய விவரம்', icon: Activity },
         { id: 'forecast', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
-        { id: 'transfers_network', label: 'Transfers', labelTa: 'இடமாற்றங்கள்', icon: ArrowLeftRight },
+        { id: 'transfers_network', label: 'Smart Transfers', labelTa: 'இடமாற்றங்கள்', icon: ArrowLeftRight },
         { id: 'weekly_report', label: 'Weekly Report', labelTa: 'வாராந்திர அறிக்கை', icon: FileText },
+      ];
+    case 'chc_facility':
+      return [
+        { id: 'command_center', label: 'CHC Command Center', labelTa: 'CHC கட்டளை மையம்', icon: LayoutDashboard },
+        { id: 'priority_alerts', label: 'Cluster Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
+          badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
+        { id: 'transfers_network', label: 'Inter-Facility Transfers', labelTa: 'இடமாற்றங்கள்', icon: ArrowLeftRight },
+        { id: 'centre_detail', label: 'PHC Network Facilities', labelTa: 'நிலைய விவரம்', icon: Activity },
+        { id: 'forecast', label: 'Demand Forecast', labelTa: 'தேவை முன்கணிப்பு', icon: BarChart3 },
+        { id: 'weekly_report', label: 'Block Report', labelTa: 'வட்டார அறிக்கை', icon: FileText },
       ];
     case 'district_officer':
       return [
@@ -143,13 +153,15 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
 }
 
 function roleLabel(role: UserRole): string {
-  const map: Record<UserRole, string> = {
+  const map: Record<string, string> = {
     patient: 'Patient',
-    pharmacist: 'Pharmacist',
-    facility: 'Facility Staff',
-    district_officer: 'District Officer',
-    state_officer: 'State Officer',
-    national_officer: 'National Officer',
+    pharmacist: 'Retail Pharmacist',
+    facility: 'PHC Pharmacist',
+    chc_facility: 'CHC Officer',
+    district_officer: 'District Health Officer',
+    state_officer: 'State Health Officer',
+    national_officer: 'National Health Officer',
+    block_officer: 'Block Health Officer',
   };
   return map[role] ?? role;
 }
@@ -177,6 +189,47 @@ export function AppShell({
 }: AppShellProps) {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchAppNotifications = async () => {
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        const json = await res.json();
+        setNotificationsList(json.notifications || []);
+        setUnreadCount(json.unread_count || 0);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppNotifications();
+    const timer = setInterval(fetchAppNotifications, 25000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch('/api/notifications/read-all', { method: 'POST' });
+      fetchAppNotifications();
+    } catch (e) {}
+  };
+
+  const handleMarkOneRead = async (id: string, actionLink?: string) => {
+    try {
+      await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+      fetchAppNotifications();
+      if (actionLink?.includes('transfers')) {
+        onSelectScreen('transfers');
+        setNotificationsOpen(false);
+      }
+    } catch (e) {}
+  };
+
   const t = translations[lang];
 
   if (!user) return null;
@@ -313,15 +366,82 @@ export function AppShell({
               {isOnline ? (lang === 'ta' ? 'இணைக்கப்பட்டது' : 'Online') : (lang === 'ta' ? 'ஆஃப்லைன்' : 'Offline')}
             </div>
 
-            {/* Notifications */}
-            {criticalAlertCount > 0 && (
-              <button className="relative p-1.5 rounded-lg hover:bg-[#F7F9FB] text-[#5B6B7A]">
+            {/* Real-Time Notification Center Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setNotificationsOpen(v => !v)}
+                className="relative p-1.5 rounded-lg hover:bg-[#F7F9FB] text-[#5B6B7A] transition-colors"
+                title="Real-Time Alerts & Notifications"
+              >
                 <Bell size={16} />
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#C62828] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {criticalAlertCount > 9 ? '9+' : criticalAlertCount}
-                </span>
+                {(unreadCount > 0 || criticalAlertCount > 0) && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 bg-[#C62828] text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {unreadCount > 9 ? '9+' : (unreadCount || criticalAlertCount)}
+                  </span>
+                )}
               </button>
-            )}
+
+              {/* Notification Center Dropdown */}
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-[#E3E8EE] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in duration-150">
+                  <div className="p-3.5 bg-gradient-to-r from-teal-900 to-[#0F6B6B] text-white flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold flex items-center gap-1.5">
+                        <Bell size={13} className="text-amber-400" />
+                        <span>System Notifications & Alerts</span>
+                      </h4>
+                      <p className="text-[10px] text-teal-200">{unreadCount} unread items</p>
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[10px] font-semibold bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded-md transition-colors"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-[#E3E8EE]">
+                    {notificationsList.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[#5B6B7A]">
+                        No active notifications. All systems operational.
+                      </div>
+                    ) : (
+                      notificationsList.map(notif => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleMarkOneRead(notif.id, notif.action_link)}
+                          className={`p-3 text-xs cursor-pointer hover:bg-slate-50 transition-colors ${
+                            !notif.is_read ? 'bg-teal-50/40 font-medium' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-bold text-[#14202B] text-xs leading-tight">
+                              {notif.title}
+                            </span>
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-sm ${
+                              notif.priority === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                              notif.priority === 'WARNING' ? 'bg-amber-100 text-amber-800' :
+                              'bg-teal-100 text-[#0F6B6B]'
+                            }`}>
+                              {notif.priority}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#5B6B7A] mt-1 leading-snug">{notif.message}</p>
+                          <div className="flex items-center justify-between text-[10px] text-[#5B6B7A] mt-2">
+                            <span className="text-[9px] font-semibold text-[#0F6B6B] uppercase tracking-wider">{notif.category}</span>
+                            {notif.action_link && (
+                              <span className="text-[#0F6B6B] hover:underline font-bold">View details →</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* High contrast */}
             <button
