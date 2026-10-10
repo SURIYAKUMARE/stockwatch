@@ -237,6 +237,17 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
     case 'audit_logs':
       return <AuditLogs lang={lang} />;
 
+    case 'inventory':
+    case 'inventory_manager': {
+      const centreId = user?.scopeId ?? selectedCentreId;
+      return <InventoryManager lang={lang} ownerId={centreId} ownerType="facility" />;
+    }
+
+    case 'import_csv': {
+      const centreId = user?.scopeId ?? selectedCentreId;
+      return <CsvImporter lang={lang} ownerId={centreId} ownerType="facility" />;
+    }
+
     case 'user_management':
       return <UserMgmtStub lang={lang} />;
 
@@ -249,31 +260,7 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
   }
 }
 
-// ─── Lightweight stub screens (will be fleshed out in Phase 4/5) ─────────────
-
-function ExpiryBatchStub({ lang }: { lang: Language }) {
-  return (
-    <div className="p-6 max-w-3xl mx-auto space-y-4">
-      <h2 className="text-base font-bold text-[#14202B]">Expiry Batch Tracker</h2>
-      <p className="text-xs text-[#5B6B7A]">Batch expiry monitoring coming in Phase 4 (Inventory module).</p>
-      <div className="bg-white border border-[#E3E8EE] rounded-xl p-8 text-center text-xs text-[#5B6B7A]">
-        No expired or near-expiry batches in demo data.
-      </div>
-    </div>
-  );
-}
-
-function ImportCsvStub({ lang }: { lang: Language }) {
-  return (
-    <div className="p-6 max-w-3xl mx-auto space-y-4">
-      <h2 className="text-base font-bold text-[#14202B]">Import Inventory (CSV)</h2>
-      <p className="text-xs text-[#5B6B7A]">CSV import with duplicate prevention coming in Phase 4.</p>
-      <div className="bg-white border border-[#E3E8EE] rounded-xl p-8 text-center text-xs text-[#5B6B7A] border-dashed">
-        Drop a CSV file here or click to browse. (Phase 4)
-      </div>
-    </div>
-  );
-}
+// ─── (Stub screens removed — full implementations in InventoryManager.tsx and CsvImporter.tsx) ──
 
 function UserMgmtStub({ lang }: { lang: Language }) {
   return (

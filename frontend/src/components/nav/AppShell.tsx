@@ -78,12 +78,15 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
       return [
         { id: 'dashboard', label: 'Dashboard', labelTa: 'டாஷ்போர்டு', icon: LayoutDashboard },
         { id: 'inventory', label: 'Inventory', labelTa: 'இருப்பு', icon: Activity },
+        { id: 'inventory_manager', label: 'Inventory Ledger', labelTa: 'இருப்பு பதிவேடு', icon: FileText },
         { id: 'stock_entry', label: 'Stock Entry', labelTa: 'இருப்பு பதிவு', icon: ClipboardPen,
           badge: pendingSync > 0 ? `${pendingSync} sync` : null, badgeColor: 'bg-orange-100 text-orange-700' },
         { id: 'alerts', label: 'Alerts', labelTa: 'எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'expiry_batches', label: 'Expiry Tracker', labelTa: 'காலாவதி கண்காணிப்பு', icon: BarChart3 },
         { id: 'import_csv', label: 'Import CSV', labelTa: 'CSV இறக்குமதி', icon: FileText },
+        { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
+        { id: 'audit_logs', label: 'Audit Log', labelTa: 'தணிக்கை பதிவு', icon: ClipboardPen },
         { id: 'reports', label: 'Reports', labelTa: 'அறிக்கைகள்', icon: FileText },
       ];
     case 'facility':
@@ -106,6 +109,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'transfers_network', label: 'Transfer Network', labelTa: 'இடமாற்ற நெட்வொர்க்', icon: ArrowLeftRight },
         { id: 'forecast_accuracy', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
         { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
+        { id: 'import_csv', label: 'Import CSV', labelTa: 'CSV இறக்குமதி', icon: FileText },
         { id: 'weekly_report', label: 'District Report', labelTa: 'மாவட்ட அறிக்கை', icon: FileText },
         { id: 'audit_logs', label: 'Audit Logs', labelTa: 'தணிக்கை பதிவுகள்', icon: ClipboardPen },
       ];
