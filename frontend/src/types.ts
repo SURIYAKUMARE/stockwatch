@@ -280,9 +280,19 @@ export interface DonorCandidate {
   lat: number;
   lng: number;
   transfer_qty?: number;
+  donor_stock_before?: number;
+  donor_days_of_cover_before?: number;
+  donor_tier_before?: UrgencyTier;
   stock_after_transfer?: number;
   days_of_cover_after?: number;
   tier_after_transfer?: UrgencyTier;
+  recipient_stock_before?: number;
+  recipient_days_of_cover_before?: number;
+  recipient_tier_before?: UrgencyTier;
+  recipient_stock_after?: number;
+  recipient_days_of_cover_after?: number;
+  recipient_tier_after?: UrgencyTier;
+  days_of_cover_gained?: number;
 }
 
 export interface TransferSuggestionsData {
@@ -293,6 +303,9 @@ export interface TransferSuggestionsData {
     lng: number;
     current_stock: number;
     needed_qty: number;
+    velocity?: number;
+    days_of_cover?: number;
+    tier?: UrgencyTier;
   };
   medicine: {
     id: string;

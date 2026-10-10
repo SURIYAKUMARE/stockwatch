@@ -171,6 +171,56 @@ def run_seed():
             )
             session.add(cm)
 
+        # Seed Duplicate Showcase Candidates in Catalogue
+        dup_showcase = [
+            # 1. Mergeable candidate: same strength (500mg), same form (tablet)
+            CanonicalMedicine(
+                id="med_pcm_dup",
+                canonical_name="Paracetamol Tab 500 mg",
+                generic_name="Paracetamol",
+                strength="500mg",
+                dosage_form="tablet",
+                unit="tablets",
+                essential=True,
+                verification_status="UNVERIFIED"
+            ),
+            # 2. Mergeable candidate: same strength (250mg), same form (capsule)
+            CanonicalMedicine(
+                id="med_amox_dup",
+                canonical_name="Amoxicillin 250 mg Cap",
+                generic_name="Amoxicillin",
+                strength="250mg",
+                dosage_form="capsule",
+                unit="capsules",
+                essential=True,
+                verification_status="UNVERIFIED"
+            ),
+            # 3. Clinical distinction guard: same drug, DIFFERENT STRENGTH (650mg vs 500mg) - MUST NOT MERGE
+            CanonicalMedicine(
+                id="med_pcm_650",
+                canonical_name="Paracetamol 650mg",
+                generic_name="Paracetamol",
+                strength="650mg",
+                dosage_form="tablet",
+                unit="tablets",
+                essential=True,
+                verification_status="VERIFIED"
+            ),
+            # 4. Clinical distinction guard: same drug, DIFFERENT STRENGTH (850mg vs 500mg) - MUST NOT MERGE
+            CanonicalMedicine(
+                id="med_metformin_850",
+                canonical_name="Metformin 850mg",
+                generic_name="Metformin",
+                strength="850mg",
+                dosage_form="tablet",
+                unit="tablets",
+                essential=True,
+                verification_status="VERIFIED"
+            ),
+        ]
+        for dcm in dup_showcase:
+            session.add(dcm)
+
         # Seed Aliases
         aliases = [
             ("med_pcm", "Crocin 500", "crocin 500", "BRAND"),
@@ -179,6 +229,10 @@ def run_seed():
             ("med_pcm_syr", "Calpol Peadiatric Syrup", "calpol peadiatric syrup", "BRAND"),
             ("med_amox", "Mox 250", "mox 250", "BRAND"),
             ("med_ors", "Electral Oral Sachet", "electral oral sachet", "BRAND"),
+            ("med_pcm_dup", "Paracetamol Generic 500", "paracetamol generic 500", "GENERIC"),
+            ("med_amox_dup", "Amox 250 Cap", "amox 250 cap", "SHORT_NAME"),
+            ("med_pcm_650", "Dolo 650", "dolo 650", "BRAND"),
+            ("med_metformin_850", "Glycomet 850", "glycomet 850", "BRAND"),
         ]
         for mid, alias, norm_alias, atype in aliases:
             ma = MedicineAlias(medicine_id=mid, alias=alias, normalized_alias=norm_alias, alias_type=atype)

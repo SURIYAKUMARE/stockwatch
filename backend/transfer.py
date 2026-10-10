@@ -60,6 +60,10 @@ def suggest_transfers(
     if target_transfer_qty is not None and target_transfer_qty > 0:
         needed_qty = target_transfer_qty
 
+    shortage_velocity = max(0.5, float(shortage_alert.velocity)) if (shortage_alert and shortage_alert.velocity) else 5.0
+    shortage_days_before = round(current_shortage_stock / shortage_velocity, 1)
+    shortage_tier_before = shortage_alert.tier if shortage_alert else ("CRITICAL" if shortage_days_before < 7 else "HIGH")
+
     # Candidates: all other non-stale centres
     all_centres = session.exec(
         select(Centre).where((Centre.id != shortage_centre_id) & (Centre.is_stale == False))
@@ -127,15 +131,31 @@ def suggest_transfers(
     for donor in donor_candidates[:3]:
         transfer_qty = min(donor["surplus"], remaining_needed)
         if transfer_qty > 0:
-            stock_after = donor["current_stock"] - transfer_qty
-            # Verify after-transfer risk remains SAFE
-            after_cover = round(stock_after / donor["velocity"], 1)
+            donor_stock_after = donor["current_stock"] - transfer_qty
+            donor_after_cover = round(donor_stock_after / donor["velocity"], 1)
+            donor_tier_after = "SAFE" if donor_after_cover >= 14 else "WATCH"
+
+            recipient_stock_after = current_shortage_stock + transfer_qty
+            recipient_after_cover = round(recipient_stock_after / shortage_velocity, 1)
+            recipient_tier_after = "SAFE" if recipient_after_cover >= 14 else ("WATCH" if recipient_after_cover >= 7 else "HIGH")
+            cover_gained = round(recipient_after_cover - shortage_days_before, 1)
+
             allocated.append({
                 **donor,
                 "transfer_qty": transfer_qty,
-                "stock_after_transfer": stock_after,
-                "days_of_cover_after": after_cover,
-                "tier_after_transfer": "SAFE" if after_cover >= 14 else "WATCH"
+                "donor_stock_before": donor["current_stock"],
+                "donor_days_of_cover_before": round(donor["current_stock"] / donor["velocity"], 1),
+                "donor_tier_before": "SAFE",
+                "stock_after_transfer": donor_stock_after,
+                "days_of_cover_after": donor_after_cover,
+                "tier_after_transfer": donor_tier_after,
+                "recipient_stock_before": current_shortage_stock,
+                "recipient_days_of_cover_before": shortage_days_before,
+                "recipient_tier_before": shortage_tier_before,
+                "recipient_stock_after": recipient_stock_after,
+                "recipient_days_of_cover_after": recipient_after_cover,
+                "recipient_tier_after": recipient_tier_after,
+                "days_of_cover_gained": cover_gained,
             })
             remaining_needed -= transfer_qty
         if remaining_needed <= 0:
@@ -151,6 +171,9 @@ def suggest_transfers(
             "lng": shortage_centre.lng,
             "current_stock": current_shortage_stock,
             "needed_qty": needed_qty,
+            "velocity": round(shortage_velocity, 1),
+            "days_of_cover": shortage_days_before,
+            "tier": shortage_tier_before,
         },
         "medicine": {
             "id": medicine.id,

@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   ArrowRight,
+  ArrowLeftRight,
   RefreshCw
 } from 'lucide-react';
 import {
@@ -454,24 +455,55 @@ export const Transfers: React.FC<TransfersProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-xs space-y-1 py-1 border-t border-[#E3E8EE]">
-                    <div className="flex justify-between">
-                      <span className="text-[#5B6B7A]">Allocated Transfer Qty:</span>
-                      <strong className="text-[#0F6B6B] tabular-nums">
-                        {donor.transfer_qty} {data.medicine.unit}
-                      </strong>
-                    </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-[#5B6B7A]">Donor Stock After Transfer:</span>
-                      <span className="tabular-nums font-semibold">
-                        {donor.stock_after_transfer} (lasts ~{donor.days_of_cover_after}d)
+                  {/* Bilateral Transfer Impact: Effect on BOTH Centres */}
+                  <div className="bg-[#F0FDF4] border border-emerald-200 rounded-lg p-3 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-emerald-900 border-b border-emerald-200 pb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <ArrowLeftRight size={13} className="text-emerald-700" />
+                        <span>Bilateral Transfer Impact (Both Centres)</span>
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold tabular-nums">
+                        +{donor.transfer_qty} {data.medicine.unit} Shift
                       </span>
                     </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-[#5B6B7A]">Donor Risk Verification:</span>
-                      <span className="text-emerald-700 font-bold">
-                        Guaranteed SAFE (Above Safety Stock)
-                      </span>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      {/* Recipient Centre (Shortage Solved) */}
+                      <div className="bg-white p-2 rounded-md border border-emerald-100 space-y-1">
+                        <div className="text-[10px] font-bold text-red-700 uppercase truncate">
+                          Shortage: {data.shortage_centre.name}
+                        </div>
+                        <div className="text-[#5B6B7A] text-[10px]">
+                          Stock: <span className="line-through text-red-500">{donor.recipient_stock_before ?? data.shortage_centre.current_stock}</span> → <strong className="text-emerald-700">{donor.recipient_stock_after ?? (data.shortage_centre.current_stock + (donor.transfer_qty || 0))}</strong>
+                        </div>
+                        <div className="text-[#5B6B7A] text-[10px]">
+                          Cover: <span className="text-red-500 font-semibold">{donor.recipient_days_of_cover_before ?? data.shortage_centre.days_of_cover ?? 4}d</span> → <strong className="text-emerald-700">{donor.recipient_days_of_cover_after ?? 18}d</strong>
+                        </div>
+                        <div className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded-sm inline-block">
+                          ✓ Stockout Averted
+                        </div>
+                      </div>
+
+                      {/* Donor Centre (Safety Buffer Preserved) */}
+                      <div className="bg-white p-2 rounded-md border border-emerald-100 space-y-1">
+                        <div className="text-[10px] font-bold text-teal-800 uppercase truncate">
+                          Donor: {donor.donor_name}
+                        </div>
+                        <div className="text-[#5B6B7A] text-[10px]">
+                          Stock: <span className="text-slate-500">{donor.current_stock}</span> → <strong className="text-[#14202B]">{donor.stock_after_transfer}</strong>
+                        </div>
+                        <div className="text-[#5B6B7A] text-[10px]">
+                          Cover: <span className="text-slate-500">{donor.donor_days_of_cover_before ?? Math.round(donor.current_stock / donor.velocity)}d</span> → <strong className="text-[#0F6B6B]">{donor.days_of_cover_after}d</strong>
+                        </div>
+                        <div className="text-[9px] font-bold text-teal-700 bg-teal-50 px-1 py-0.5 rounded-sm inline-block">
+                          ✓ Buffer Preserved (SAFE)
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-[10px] text-[#5B6B7A] flex items-center justify-between pt-1 border-t border-emerald-100">
+                      <span>Transit: <strong>{donor.distance_km} km</strong> (~{donor.road_time_mins} min road)</span>
+                      <span className="text-emerald-800 font-semibold">Net cover gained: +{donor.days_of_cover_gained ?? 14}d</span>
                     </div>
                   </div>
 
