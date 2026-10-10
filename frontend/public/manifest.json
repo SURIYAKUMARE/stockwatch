@@ -1,0 +1,21 @@
+{
+  "name": "StockWatch PHC — Medicine Stock-Out Early Warning System",
+  "short_name": "StockWatch PHC",
+  "description": "Medicine stock-out early warning and inter-PHC transfer network optimizer for Primary Health Centres",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F9FB",
+  "theme_color": "#0F6B6B",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
