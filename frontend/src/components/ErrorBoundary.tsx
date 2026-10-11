@@ -27,13 +27,20 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo });
   }
 
-  private handleReset = () => {
+  private handleReset = async () => {
     try {
-      localStorage.removeItem('sw_session_v3');
-      localStorage.removeItem('stockwatch_token');
-      localStorage.removeItem('stockwatch_user');
+      localStorage.clear();
+      sessionStorage.clear();
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
     } catch (e) {}
-    window.location.reload();
+    window.location.href = '/';
   };
 
   private handleReload = () => {
@@ -44,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#F7F9FB] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-[#E3E8EE] p-8 text-center space-y-6">
+          <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl border border-[#E3E8EE] p-8 text-center space-y-6">
             <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
               <AlertTriangle size={32} />
             </div>
@@ -57,8 +64,14 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {this.state.error && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-left font-mono text-xs text-red-700 overflow-x-auto max-h-32">
-                {this.state.error.toString()}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-left font-mono text-xs text-red-700 overflow-x-auto max-h-48 whitespace-pre-wrap">
+                <div className="font-bold">{this.state.error.toString()}</div>
+                {this.state.error.stack && (
+                  <div className="text-[10px] text-gray-500 mt-2 font-mono">{this.state.error.stack}</div>
+                )}
+                {this.state.errorInfo?.componentStack && (
+                  <div className="text-[10px] text-gray-400 mt-1 font-mono">{this.state.errorInfo.componentStack}</div>
+                )}
               </div>
             )}
 
@@ -75,7 +88,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-[#E3E8EE] text-[#14202B] hover:border-red-300 hover:text-red-600 font-bold text-xs rounded-xl transition-all shadow-sm"
               >
                 <LogOut size={14} />
-                Reset Session
+                Clear Cache & Reset
               </button>
             </div>
           </div>

@@ -18,7 +18,8 @@ import {
   BellRing,
   Pill,
   BookOpen,
-  Plus
+  Plus,
+  Navigation
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type { AppScreen } from '../../components/nav/AppShell';
