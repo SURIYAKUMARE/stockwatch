@@ -30,6 +30,9 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [actionFilter, setActionFilter] = useState<string>('ALL');
 
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [verificationResult, setVerificationResult] = useState<any>(null);
+
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
@@ -40,6 +43,19 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       console.error('Failed to load audit logs', e);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVerifyChain = async () => {
+    setIsVerifying(true);
+    try {
+      const res = await fetch('/api/audit/verify-chain', { method: 'POST' });
+      const data = await res.json();
+      setVerificationResult(data);
+    } catch (e) {
+      alert('Verification network error');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -120,7 +136,16 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleVerifyChain}
+            disabled={isVerifying}
+            className="px-3 py-2 rounded-lg text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-xs flex items-center gap-1.5"
+            title="Verify SHA-256 hash chain cryptographic integrity"
+          >
+            <ShieldCheck size={14} className={isVerifying ? 'animate-spin' : ''} />
+            <span>{isVerifying ? 'Verifying Chain...' : 'Verify Cryptographic Chain'}</span>
+          </button>
           <button
             onClick={fetchLogs}
             disabled={isLoading}
@@ -134,10 +159,47 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             className="px-3.5 py-2 rounded-lg text-xs font-bold bg-[#0F6B6B] text-white hover:bg-[#0c5555] transition shadow-xs flex items-center gap-1.5"
           >
             <Download size={14} />
-            <span>Export Audit Trail (CSV)</span>
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
+
+      {/* Cryptographic Verification Report Banner */}
+      {verificationResult && (
+        <div className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-200 ${
+          verificationResult.is_valid
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+            : 'bg-rose-50 border-rose-300 text-rose-950'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${verificationResult.is_valid ? 'bg-emerald-200 text-emerald-800' : 'bg-rose-200 text-rose-800'}`}>
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider">
+                {verificationResult.is_valid ? 'Cryptographic Ledger Verified (Chain Intact)' : 'Ledger Integrity Compromised!'}
+              </div>
+              <p className="text-xs opacity-90 mt-0.5">
+                {verificationResult.message || verificationResult.failure_reason}
+              </p>
+              {verificationResult.latest_block_hash && (
+                <div className="flex items-center gap-2 mt-1 text-[11px] font-mono opacity-80">
+                  <span>Latest Hash: {verificationResult.latest_block_hash.substring(0, 16)}...</span>
+                  <span>•</span>
+                  <span>Algorithm: {verificationResult.algorithm}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setVerificationResult(null)}
+            className="text-xs font-bold underline opacity-80 hover:opacity-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Audit Log Table */}
       <div className="bg-white border border-[#E3E8EE] rounded-xl overflow-hidden shadow-xs">
@@ -155,7 +217,7 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               <option value="TRANSFER_RECEIVE">TRANSFER_RECEIVE</option>
               <option value="CATALOGUE_MERGE">CATALOGUE_MERGE</option>
               <option value="CSV_IMPORT">CSV_IMPORT</option>
-              <option value="REGISTER">REGISTER</option>
+              <option value="LEDGER_GENESIS">LEDGER_GENESIS</option>
             </select>
           </div>
 
@@ -175,6 +237,7 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#E3E8EE] bg-[#F7F9FB] text-[#5B6B7A] font-semibold">
+                <th className="py-3 px-4">Block #</th>
                 <th className="py-3 px-4">Timestamp (UTC)</th>
                 <th className="py-3 px-4">Action</th>
                 <th className="py-3 px-4">User & Role</th>
@@ -183,10 +246,18 @@ export const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E3E8EE]">
-              {filteredLogs.map((log) => (
+              {filteredLogs.map((log, idx) => (
                 <tr key={log.id} className="hover:bg-[#F7F9FB]/60 transition">
+                  <td className="py-3 px-4 font-mono font-bold text-teal-800 text-[11px]">
+                    #{log.sequence_number || filteredLogs.length - idx}
+                  </td>
                   <td className="py-3 px-4 font-mono text-[11px] text-[#5B6B7A] whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString()}
+                    <div>{new Date(log.created_at).toLocaleString()}</div>
+                    {log.entry_hash && (
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        Hash: {log.entry_hash.substring(0, 10)}...
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getActionBadge(log.action)}`}>

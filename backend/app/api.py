@@ -1784,9 +1784,70 @@ def list_users(session: Session = Depends(get_session)):
     ]
 
 @router.get("/admin/audit-logs")
-def list_audit_logs(limit: int = 50, session: Session = Depends(get_session)):
-    logs = session.exec(select(models.AuditLog).order_by(models.AuditLog.created_at.desc()).limit(limit)).all()
+@router.get("/audit/ledger")
+def list_audit_logs(limit: int = 100, session: Session = Depends(get_session)):
+    logs = session.exec(select(models.AuditLog).order_by(models.AuditLog.sequence_number.desc(), models.AuditLog.created_at.desc()).limit(limit)).all()
     return logs
+
+@router.post("/audit/verify-chain")
+def verify_audit_ledger_chain(session: Session = Depends(get_session)):
+    """
+    Cryptographic SHA-256 hash-chain verification of the tamper-evident audit ledger.
+    Traverses the chain from genesis block to current block and verifies block hashes,
+    consecutive sequence numbers, and digital signatures.
+    """
+    from backend.audit_ledger import verify_ledger_integrity
+    return verify_ledger_integrity(session)
+
+@router.get("/inventory/csv/template")
+def download_csv_template():
+    """Download standard CSV template for offline/online bulk inventory data entry."""
+    from fastapi.responses import Response
+    csv_content = (
+        "medicine_name,strength,dosage_form,batch_number,expiry_date,quantity,transaction_type\n"
+        "Paracetamol,500mg,tablet,BTH-2026-01,2028-06-30,500,receive\n"
+        "Amoxicillin,250mg,capsule,BTH-2026-02,2027-12-31,250,receive\n"
+        "Metformin,500mg,tablet,BTH-2026-03,2028-03-31,300,receive\n"
+        "ORS Sachets,20.5g,sachet,BTH-2026-04,2028-09-30,400,receive\n"
+    )
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=stockwatch_inventory_template.csv"}
+    )
+
+@router.get("/metrics")
+def prometheus_metrics(session: Session = Depends(get_session)):
+    """Expose Prometheus observability metrics for health centres and supply chain."""
+    from fastapi.responses import PlainTextResponse
+    total_centres = len(session.exec(select(models.Centre)).all())
+    total_medicines = len(session.exec(select(models.Medicine)).all())
+    critical_alerts = len(session.exec(select(models.Alert).where(models.Alert.tier == "CRITICAL")).all())
+    active_transfers = len(session.exec(select(models.TransferOrder).where(models.TransferOrder.status.in_(["REQUESTED", "OFFERED", "RESERVED", "DISPATCHED"]))).all())
+    synced_actions = len(session.exec(select(models.OfflineSyncAction)).all())
+    audit_blocks = len(session.exec(select(models.AuditLog)).all())
+
+    metrics_text = (
+        f"# HELP stockwatch_centres_monitored_total Total primary health centres monitored\n"
+        f"# TYPE stockwatch_centres_monitored_total gauge\n"
+        f"stockwatch_centres_monitored_total {total_centres}\n\n"
+        f"# HELP stockwatch_medicines_catalog_total Total medicines in canonical catalogue\n"
+        f"# TYPE stockwatch_medicines_catalog_total gauge\n"
+        f"stockwatch_medicines_catalog_total {total_medicines}\n\n"
+        f"# HELP stockwatch_critical_alerts_total Total active critical stockout alerts\n"
+        f"# TYPE stockwatch_critical_alerts_total gauge\n"
+        f"stockwatch_critical_alerts_total {critical_alerts}\n\n"
+        f"# HELP stockwatch_active_transfers_total Total active inter-centre transfers in transit or pending\n"
+        f"# TYPE stockwatch_active_transfers_total gauge\n"
+        f"stockwatch_active_transfers_total {active_transfers}\n\n"
+        f"# HELP stockwatch_offline_actions_synced_total Total actions synchronized from offline clients\n"
+        f"# TYPE stockwatch_offline_actions_synced_total counter\n"
+        f"stockwatch_offline_actions_synced_total {synced_actions}\n\n"
+        f"# HELP stockwatch_audit_ledger_blocks_total Total cryptographically verified audit blocks\n"
+        f"# TYPE stockwatch_audit_ledger_blocks_total counter\n"
+        f"stockwatch_audit_ledger_blocks_total {audit_blocks}\n"
+    )
+    return PlainTextResponse(metrics_text)
 
 @router.get("/admin/integrations")
 def get_integrations_status():

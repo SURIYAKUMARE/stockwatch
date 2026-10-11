@@ -1054,6 +1054,12 @@ def run_seed():
                         )
                         session.add(event)
 
+        # Seed Genesis block and core audit trail
+        from backend.audit_ledger import record_auditable_event
+        record_auditable_event(session, "LEDGER_GENESIS", "system", "sys_genesis", "admin", "admin", "StockWatch PHC Cryptographic Audit Ledger Genesis Block initialized with SHA-256 hash chaining")
+        record_auditable_event(session, "EDL_CATALOGUE_SEEDED", "catalogue", "cat_edl_2026", "pharma_chief", "pharmacist", "Seeded 16 essential EDL molecules across 12 Primary Health Centres")
+        record_auditable_event(session, "FACILITY_NETWORK_INITIALIZED", "facility", "phc_valparai", "dr_rajesh_ddhs", "district_officer", "Coimbatore District PHC & CHC transfer network verified and active")
+
         session.commit()
         print("[OK] Deterministic seed data successfully created for all 6 roles, facilities, pharmacies, and medicines!")
 

@@ -264,12 +264,16 @@ class AvailabilityEnquiry(SQLModel, table=True):
 
 class AuditLog(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    sequence_number: int = Field(default=0, index=True)
     action: str # STOCK_ADJUST, TRANSFER_APPROVE, CATALOGUE_MERGE, CSV_IMPORT, LOGIN, PERMISSION_CHANGE
     entity_type: str
     entity_id: str
     user_id: str
     user_role: str
     details: str = ""
+    prev_hash: str = "0000000000000000000000000000000000000000000000000000000000000000"
+    entry_hash: str = ""
+    digital_signature: Optional[str] = None
     created_at: datetime = Field(default_factory=get_utc_now)
 
 # ================= PATIENT CARE & MEDICATION REMINDERS =================

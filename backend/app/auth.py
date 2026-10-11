@@ -160,8 +160,10 @@ def record_audit(
     user_role: str,
     details: str = ""
 ):
-    """Write an immutable audit log entry."""
-    audit = models.AuditLog(
+    """Write an immutable, cryptographically hash-chained audit ledger entry."""
+    from backend.audit_ledger import record_auditable_event
+    return record_auditable_event(
+        session=session,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
@@ -169,5 +171,3 @@ def record_audit(
         user_role=user_role,
         details=details
     )
-    session.add(audit)
-    session.commit()

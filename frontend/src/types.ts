@@ -113,12 +113,16 @@ export interface NationalAnalyticsData {
 
 export interface AuditLogItem {
   id: string;
+  sequence_number?: number;
   action: string;
   entity_type: string;
   entity_id: string;
   user_id: string;
   user_role: string;
   details: string;
+  prev_hash?: string;
+  entry_hash?: string;
+  digital_signature?: string;
   created_at: string;
 }
 
