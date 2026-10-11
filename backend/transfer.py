@@ -155,6 +155,7 @@ def suggest_transfers(
                 "donor_days_of_cover_before": round(donor["current_stock"] / donor["velocity"], 1),
                 "donor_tier_before": "SAFE",
                 "stock_after_transfer": donor_stock_after,
+                "donor_stock_after": donor_stock_after,
                 "days_of_cover_after": donor_after_cover,
                 "tier_after_transfer": donor_tier_after,
                 "recipient_stock_before": current_shortage_stock,
