@@ -274,6 +274,7 @@ export function getOfflineQueue(): QueuedTransaction[] {
 
 export function addToOfflineQueue(tx: Omit<QueuedTransaction, 'id' | 'timestamp'>): QueuedTransaction {
   const queue = getOfflineQueue();
+
   const queuedItem: QueuedTransaction = {
     ...tx,
     id: 'queued_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
@@ -312,3 +313,6 @@ export function clearFromOfflineQueue(id: string): void {
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(queue));
   } catch (e) {}
 }
+
+export const queueOfflineTransaction = addToOfflineQueue;
+
