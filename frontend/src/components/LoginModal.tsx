@@ -168,13 +168,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         {/* Left Side: Brand Visual & Supply Chain Preview */}
         <div className="md:w-5/12 bg-linear-to-br from-[#0F6B6B] to-[#0A4B4B] text-white p-8 flex flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white backdrop-blur-xs border border-white/20">
-                <Activity size={22} className="stroke-[2.5]" />
+            <div className="flex items-center gap-3 mb-6">
+              <img src="/logo.png" alt="StockWatch PHC" className="w-11 h-11 object-contain rounded-xl bg-white/10 p-1 border border-white/20 shadow-xs" />
+              <div>
+                <span className="font-extrabold text-base tracking-tight text-white block leading-tight">
+                  StockWatch PHC
+                </span>
+                <span className="text-[10px] text-teal-200 tracking-wider uppercase font-semibold">
+                  Smart Medicine Network
+                </span>
               </div>
-              <span className="font-extrabold text-base tracking-tight text-white">
-                StockWatch PHC
-              </span>
             </div>
 
             <h2 className="text-xl md:text-2xl font-black leading-tight tracking-tight text-white">

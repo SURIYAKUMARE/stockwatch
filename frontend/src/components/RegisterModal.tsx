@@ -75,9 +75,12 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
       <div className="bg-white rounded-2xl border border-[#E3E8EE] shadow-2xl max-w-lg w-full p-6">
         <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE] mb-4">
-          <div>
-            <h3 className="font-bold text-base text-[#14202B]">Register for StockWatch PHC</h3>
-            <p className="text-xs text-[#5B6B7A]">Select account type to connect to the supply network</p>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="StockWatch PHC" className="w-9 h-9 object-contain rounded-lg shadow-xs" />
+            <div>
+              <h3 className="font-bold text-base text-[#14202B] leading-tight">Register for StockWatch PHC</h3>
+              <p className="text-xs text-[#5B6B7A]">Select account type to connect to the supply network</p>
+            </div>
           </div>
           <button
             onClick={onClose}
