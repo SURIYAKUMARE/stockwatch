@@ -143,9 +143,14 @@ def suggest_transfers(
             recipient_tier_after = "SAFE" if recipient_after_cover >= 14 else ("WATCH" if recipient_after_cover >= 7 else "HIGH")
             cover_gained = round(recipient_after_cover - shortage_days_before, 1)
 
+            eta_days = round(donor["road_time_mins"] / 1440.0, 2)
+            arrives_before_stockout = bool(eta_days < max(0.2, shortage_days_before))
+
             allocated.append({
                 **donor,
                 "transfer_qty": transfer_qty,
+                "eta_days": eta_days,
+                "arrives_before_stockout": arrives_before_stockout,
                 "donor_stock_before": donor["current_stock"],
                 "donor_days_of_cover_before": round(donor["current_stock"] / donor["velocity"], 1),
                 "donor_tier_before": "SAFE",
@@ -165,6 +170,26 @@ def suggest_transfers(
             break
 
     total_transferable = sum(a["transfer_qty"] for a in allocated)
+    remaining_shortfall = max(0, needed_qty - total_transferable)
+
+    district_replenishment_recommended = (total_transferable == 0 or remaining_shortfall > 0)
+    district_reorder_qty = remaining_shortfall if total_transferable > 0 else needed_qty
+
+    if total_transferable >= needed_qty:
+        recommendation_summary = (
+            f"Recommended inter-centre transfer of {total_transferable} {medicine.unit} from {len(allocated)} "
+            f"nearby donor centre(s) with surplus. Preserves all donor safety buffers."
+        )
+    elif total_transferable > 0:
+        recommendation_summary = (
+            f"Partial inter-centre transfer feasible ({total_transferable} {medicine.unit}); recommend district warehouse "
+            f"reorder for remaining shortfall of {remaining_shortfall} {medicine.unit}."
+        )
+    else:
+        recommendation_summary = (
+            f"No safe donor centres with surplus available in district network. "
+            f"Recommend immediate district emergency warehouse reorder of {needed_qty} {medicine.unit}."
+        )
 
     return {
         "shortage_centre": {
@@ -184,7 +209,10 @@ def suggest_transfers(
             "unit": medicine.unit,
         },
         "total_transferable": total_transferable,
-        "remaining_shortfall": max(0, needed_qty - total_transferable),
+        "remaining_shortfall": remaining_shortfall,
+        "district_replenishment_recommended": district_replenishment_recommended,
+        "district_reorder_qty": district_reorder_qty,
+        "recommendation_summary": recommendation_summary,
         "suggested_donors": allocated,
         "all_ranked_donors": donor_candidates,
     }
@@ -209,6 +237,24 @@ def execute_transfer(
     ).first()
     if not donor_sl or donor_sl.current_stock < qty:
         return {"success": False, "error": "Insufficient donor stock"}
+
+    # Enforce donor safety stock protection: transfer cannot leave donor below safety threshold
+    donor_alert = session.exec(
+        select(Alert).where((Alert.centre_id == donor_id) & (Alert.medicine_id == medicine_id))
+    ).first()
+    donor_velocity = max(0.5, float(donor_alert.velocity)) if (donor_alert and donor_alert.velocity) else 5.0
+    safety_days = med.safety_days if hasattr(med, 'safety_days') and med.safety_days else 15
+    lead_time = 5
+    donor_safety_stock = int(math.ceil(donor_velocity * (safety_days + lead_time)))
+
+    if (donor_sl.current_stock - qty) < donor_safety_stock:
+        return {
+            "success": False,
+            "error": f"Safety stock violation: Transfer of {qty} units leaves donor below safety threshold ({donor_safety_stock} units required).",
+            "donor_current_stock": donor_sl.current_stock,
+            "donor_safety_stock": donor_safety_stock,
+            "max_safe_transfer_qty": max(0, donor_sl.current_stock - donor_safety_stock)
+        }
 
     # Recipient stock level
     recipient_sl = session.exec(

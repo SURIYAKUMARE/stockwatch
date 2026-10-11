@@ -148,3 +148,67 @@ def test_weekly_report():
     data = res.json()
     assert "Weekly Medicine Action" in data["report_title"]
     assert len(data["centre_reports"]) >= 1
+
+def test_transfer_safety_stock_violation_rejected():
+    """Criterion 4: A transfer that violates donor safety stock is rejected."""
+    # Find top donor for shortage
+    sug_res = client.get("/api/transfers/suggest?centre=phc_valparai&medicine=med_pcm_syr")
+    sug_data = sug_res.json()
+    top_donor = sug_data["suggested_donors"][0]
+    donor_id = top_donor["donor_id"]
+    current_donor_stock = top_donor["current_stock"]
+
+    # Try to transfer almost all stock (leaving donor well below safety stock)
+    excessive_qty = current_donor_stock - 5
+    payload = {
+        "donor_id": donor_id,
+        "recipient_id": "phc_valparai",
+        "medicine_id": "med_pcm_syr",
+        "qty": excessive_qty,
+        "user_name": "Dr. Rajesh (DDHS)"
+    }
+    res = client.post("/api/transfers/approve", json=payload)
+    assert res.status_code == 400
+    assert "Safety stock violation" in res.json()["detail"]
+
+def test_unauthorized_patient_cannot_approve_transfer():
+    """Criterion 10: Unauthorized users cannot approve transfers."""
+    # Login as patient
+    login_res = client.post("/api/auth/login", json={"username_or_email": "patient_demo", "password": "demo123"})
+    patient_token = login_res.json()["access_token"]
+
+    payload = {
+        "donor_id": "phc_aliyar",
+        "recipient_id": "phc_valparai",
+        "medicine_id": "med_pcm_syr",
+        "qty": 20,
+        "user_name": "Patient Sneak"
+    }
+    # Direct approve endpoint
+    res = client.post(
+        "/api/transfers/approve",
+        json=payload,
+        headers={"Authorization": f"Bearer {patient_token}"}
+    )
+    assert res.status_code == 403
+    assert "Forbidden" in res.json()["detail"]
+
+def test_transport_delay_and_district_replenishment_fallback():
+    """Criterion 5 & 12: Transport delays considered; fallback to district replenishment."""
+    sug_res = client.get("/api/transfers/suggest?centre=phc_valparai&medicine=med_pcm_syr")
+    assert sug_res.status_code == 200
+    data = sug_res.json()
+
+    assert "recommendation_summary" in data
+    assert "district_replenishment_recommended" in data
+    assert "district_reorder_qty" in data
+    assert len(data["suggested_donors"]) >= 1
+
+    first_donor = data["suggested_donors"][0]
+    assert "eta_days" in first_donor
+    assert "road_time_mins" in first_donor
+    assert "arrives_before_stockout" in first_donor
+    assert first_donor["road_time_mins"] > 0
+    # Road travel under 2 hours is well before a 2.6 day stockout
+    assert first_donor["arrives_before_stockout"] is True
+

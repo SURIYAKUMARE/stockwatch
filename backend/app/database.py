@@ -36,8 +36,16 @@ if os.getenv("VERCEL") and not os.getenv("DATABASE_URL"):
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./stockwatch.db")
 
+# Normalize legacy postgres:// scheme to postgresql:// for SQLAlchemy
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args)
+engine_kwargs = {"echo": False, "connect_args": connect_args}
+if not DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["pool_pre_ping"] = True
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 def init_db():
     from backend import models

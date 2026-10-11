@@ -492,16 +492,25 @@ def get_transfer_suggestions(
 @router.post("/transfers/approve")
 def approve_transfer(
     req: TransferApproveRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
     session: Session = Depends(get_session)
 ):
+    if current_user and current_user.role == "patient":
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Patients are not authorized to approve inter-centre medicine transfers."
+        )
+
     res = execute_transfer(
         session=session,
         donor_id=req.donor_id,
         recipient_id=req.recipient_id,
         medicine_id=req.medicine_id,
         qty=req.qty,
-        user_name=req.user_name
+        user_name=req.user_name or (current_user.name if current_user else "Authorized Officer")
     )
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Transfer failed"))
     return res
 
 @router.get("/transfers/pooled")
@@ -1621,6 +1630,9 @@ def approve_transfer_order(
     current_user: Optional[models.User] = Depends(get_optional_user),
     session: Session = Depends(get_session)
 ):
+    if current_user and current_user.role == "patient":
+        raise HTTPException(status_code=403, detail="Forbidden: Patients cannot approve transfer orders.")
+
     trf = session.get(models.TransferOrder, transfer_id)
     if not trf:
         raise HTTPException(status_code=404, detail="Transfer order not found")
