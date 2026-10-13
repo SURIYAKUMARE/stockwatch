@@ -20,6 +20,7 @@ import { NationalDashboard } from './components/NationalDashboard';
 import { DeduplicationReview } from './components/DeduplicationReview';
 import { AuditLogViewer } from './components/AuditLogViewer';
 import { OfflineQueueModal } from './components/OfflineQueueModal';
+import { NetworkMapScreen } from './pages/dashboards/NetworkMapScreen';
 import { WifiOff } from 'lucide-react';
 
 import {
@@ -559,6 +560,15 @@ export function App() {
           {/* Weekly Replenishment Action Report */}
           {activeScreen === 'reports' && (
             <WeeklyReport lang={lang} />
+          )}
+
+          {/* Geospatial Network Stock Map & Pharmacy Locator */}
+          {activeScreen === 'map_view' && (
+            <NetworkMapScreen
+              lang={lang}
+              onNavigateToTransfers={handleNavigateToTransfers}
+              preselectedLocationId={selectedCentreId}
+            />
           )}
         </main>
       </div>

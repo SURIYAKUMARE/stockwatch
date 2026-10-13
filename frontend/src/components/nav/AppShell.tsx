@@ -54,7 +54,8 @@ export type AppScreen =
   | 'medicine_catalogue'
   | 'audit_logs'
   | 'user_management'
-  | 'weekly_report';
+  | 'weekly_report'
+  | 'map_view';
 
 interface NavItem {
   id: AppScreen;
@@ -86,6 +87,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'expiry_batches', label: 'Expiry Tracker', labelTa: 'காலாவதி கண்காணிப்பு', icon: BarChart3 },
         { id: 'import_csv', label: 'Import CSV', labelTa: 'CSV இறக்குமதி', icon: FileText },
         { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
+        { id: 'map_view', label: 'Network Stock Map', labelTa: 'வரைபட இருப்பு விவரம்', icon: MapPin },
         { id: 'audit_logs', label: 'Audit Log', labelTa: 'தணிக்கை பதிவு', icon: ClipboardPen },
         { id: 'reports', label: 'Reports', labelTa: 'அறிக்கைகள்', icon: FileText },
       ];
@@ -96,6 +98,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'stock_entry_facility', label: 'Stock Entry', labelTa: 'இருப்பு பதிவு', icon: ClipboardPen,
           badge: pendingSync > 0 ? `${pendingSync} sync` : null, badgeColor: 'bg-orange-100 text-orange-700' },
+        { id: 'map_view', label: 'District Stock Map', labelTa: 'வரைபட இருப்பு விவரம்', icon: MapPin },
         { id: 'centre_detail', label: 'Centre Inventory', labelTa: 'மைய விவரம்', icon: Activity },
         { id: 'forecast', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
         { id: 'transfers_network', label: 'Smart Transfers', labelTa: 'இடமாற்றங்கள்', icon: ArrowLeftRight },
@@ -106,6 +109,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'command_center', label: 'CHC Command Center', labelTa: 'CHC கட்டளை மையம்', icon: LayoutDashboard },
         { id: 'priority_alerts', label: 'Cluster Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
+        { id: 'map_view', label: 'Cluster Map & Shops', labelTa: 'வட்டார வரைபடம்', icon: MapPin },
         { id: 'transfers_network', label: 'Inter-Facility Transfers', labelTa: 'இடமாற்றங்கள்', icon: ArrowLeftRight },
         { id: 'centre_detail', label: 'PHC Network Facilities', labelTa: 'நிலைய விவரம்', icon: Activity },
         { id: 'forecast', label: 'Demand Forecast', labelTa: 'தேவை முன்கணிப்பு', icon: BarChart3 },
@@ -116,6 +120,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'command_center', label: 'Command Center', labelTa: 'கட்டளை மையம்', icon: LayoutDashboard },
         { id: 'priority_alerts', label: 'Priority Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
+        { id: 'map_view', label: 'Network Stock Map', labelTa: 'வரைபட இருப்பு விவரம்', icon: MapPin },
         { id: 'transfers_network', label: 'Transfer Network', labelTa: 'இடமாற்ற நெட்வொர்க்', icon: ArrowLeftRight },
         { id: 'forecast_accuracy', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
         { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
@@ -128,7 +133,8 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'dashboard', label: 'State Overview', labelTa: 'மாநில கண்ணோட்டம்', icon: LayoutDashboard },
         { id: 'priority_alerts', label: 'Critical Alerts', labelTa: 'ஆபத்தான எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
-        { id: 'command_center', label: 'District Heatmap', labelTa: 'மாவட்ட வெப்ப வரைபடம்', icon: MapPin },
+        { id: 'map_view', label: 'District Stock Map', labelTa: 'மாவட்ட வரைபடம்', icon: MapPin },
+        { id: 'command_center', label: 'District Heatmap', labelTa: 'மாவட்ட வெப்ப வரைபடம்', icon: LayoutDashboard },
         { id: 'transfers_network', label: 'Transfer Activity', labelTa: 'இடமாற்ற நடவடிக்கை', icon: ArrowLeftRight },
         { id: 'forecast_accuracy', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
         { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
@@ -140,7 +146,8 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'dashboard', label: 'National Overview', labelTa: 'தேசிய கண்ணோட்டம்', icon: LayoutDashboard },
         { id: 'priority_alerts', label: 'Critical Alerts', labelTa: 'ஆபத்தான எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
-        { id: 'command_center', label: 'State Heatmap', labelTa: 'மாநில வெப்ப வரைபடம்', icon: MapPin },
+        { id: 'map_view', label: 'Geospatial Stock Map', labelTa: 'தேசிய வரைபடம்', icon: MapPin },
+        { id: 'command_center', label: 'State Heatmap', labelTa: 'மாநில வெப்ப வரைபடம்', icon: LayoutDashboard },
         { id: 'forecast_accuracy', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
         { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
         { id: 'reports', label: 'National Reports', labelTa: 'தேசிய அறிக்கைகள்', icon: FileText },

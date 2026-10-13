@@ -15,7 +15,8 @@ import {
   Globe,
   Layers,
   ShieldCheck,
-  Home
+  Home,
+  MapPin
 } from 'lucide-react';
 import { translations, Language } from '../i18n';
 import { AuthUser, UserRole } from '../types';
@@ -34,7 +35,8 @@ export type ScreenId =
   | 'state_dashboard'
   | 'national_dashboard'
   | 'deduplication'
-  | 'audit_logs';
+  | 'audit_logs'
+  | 'map_view';
 
 interface SidebarProps {
   activeScreen: ScreenId;
@@ -80,6 +82,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: 'Outlet'
         },
         {
+          id: 'map_view' as ScreenId,
+          label: t.nav_network_map || 'Network Stock Map',
+          icon: MapPin,
+          badge: null
+        },
+        {
           id: 'deduplication' as ScreenId,
           label: 'Medicine Catalogue & Dedup',
           icon: Layers,
@@ -101,6 +109,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'Facility Early Warning',
           icon: Hospital,
           badge: 'Facility'
+        },
+        {
+          id: 'map_view' as ScreenId,
+          label: t.nav_network_map || 'District Stock Map',
+          icon: MapPin,
+          badge: 'Map',
+          badgeColor: 'bg-teal-100 text-teal-800'
         },
         {
           id: 'stock_entry' as ScreenId,
@@ -137,6 +152,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'State Directorate Overview',
           icon: Building,
           badge: 'State HQ'
+        },
+        {
+          id: 'map_view' as ScreenId,
+          label: t.nav_network_map || 'District Stock Map',
+          icon: MapPin,
+          badge: null
         },
         {
           id: 'command_center' as ScreenId,
@@ -187,6 +208,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badge: 'MoHFW'
         },
         {
+          id: 'map_view' as ScreenId,
+          label: t.nav_network_map || 'Geospatial Stock Map',
+          icon: MapPin,
+          badge: null
+        },
+        {
           id: 'state_dashboard' as ScreenId,
           label: 'State Analytics',
           icon: Building,
@@ -227,6 +254,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         icon: ShieldAlert,
         badge: criticalAlertCount > 0 ? criticalAlertCount : null,
         badgeColor: 'bg-[#C62828] text-white'
+      },
+      {
+        id: 'map_view' as ScreenId,
+        label: t.nav_network_map || 'Network Map & Stocks',
+        icon: MapPin,
+        badge: 'Live Map',
+        badgeColor: 'bg-teal-100 text-teal-800'
       },
       {
         id: 'stock_entry' as ScreenId,

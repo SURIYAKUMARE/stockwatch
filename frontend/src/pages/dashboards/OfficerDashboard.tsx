@@ -30,6 +30,7 @@ import { PharmacistInventory } from './PharmacistInventory';
 import { StateNationalOverview } from './StateNationalOverview';
 import { InventoryManager } from './InventoryManager';
 import { CsvImporter } from './CsvImporter';
+import { NetworkMapScreen } from './NetworkMapScreen';
 
 import {
   FALLBACK_CENTRES,
@@ -150,6 +151,9 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
     if (activeScreen === 'medicine_catalogue') {
       return <MedicineCatalogue lang={lang} />;
     }
+    if (activeScreen === 'map_view') {
+      return <NetworkMapScreen lang={lang} onNavigateToTransfers={handleSelectCell} />;
+    }
     if (activeScreen === 'audit_logs') {
       return <AuditLogs lang={lang} />;
     }
@@ -235,6 +239,15 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
     case 'weekly_report':
     case 'reports':
       return <WeeklyReport lang={lang} />;
+
+    case 'map_view':
+      return (
+        <NetworkMapScreen
+          lang={lang}
+          onNavigateToTransfers={(cId, mId) => { handleSelectCell(cId, mId); }}
+          preselectedLocationId={selectedCentreId}
+        />
+      );
 
     case 'medicine_catalogue':
       return <MedicineCatalogue lang={lang} />;

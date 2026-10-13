@@ -132,6 +132,43 @@ export interface Centre {
   block: string;
   district: string;
   is_stale: boolean;
+  lat?: number;
+  lng?: number;
+}
+
+export interface MedicineStockInfo {
+  medicine_id: string;
+  medicine_name: string;
+  quantity: number;
+  unit: string;
+  status: 'IN_STOCK' | 'LOW_STOCK' | 'CRITICAL' | 'OUT_OF_STOCK';
+  days_of_cover?: number | null;
+  tier?: string;
+  price_inr?: string;
+}
+
+export interface MapLocationItem {
+  id: string;
+  name: string;
+  type: 'phc' | 'chc' | 'sub_centre' | 'pharmacy';
+  type_label: string;
+  category: 'FACILITY' | 'PHARMACY';
+  address: string;
+  block?: string;
+  district: string;
+  lat: number;
+  lng: number;
+  phone?: string;
+  is_stale?: boolean;
+  registration_number?: string;
+  data_source?: string;
+  verified?: boolean;
+  total_stock_count: number;
+  distinct_medicines_count: number;
+  critical_shortages_count?: number;
+  selected_medicine_stock?: number;
+  medicines: MedicineStockInfo[];
+  directions_url?: string;
 }
 
 export interface Medicine {

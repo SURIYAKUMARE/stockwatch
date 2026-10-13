@@ -1,0 +1,2876 @@
+[
+  {
+    "id": "phc_valparai",
+    "name": "PHC Valparai",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Anaimalai Block, Coimbatore District",
+    "block": "Anaimalai",
+    "district": "Coimbatore",
+    "lat": 10.3254,
+    "lng": 76.9558,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 5456,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 4,
+    "medicines": [
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 597,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 102.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 532,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 56.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 491,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 46.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 491,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 75.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 477,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 99.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 448,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 45.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 441,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 65.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 439,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 436,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 34.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 411,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 39.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 294,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 32.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 267,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 20.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 80,
+        "unit": "tablets",
+        "status": "CRITICAL",
+        "days_of_cover": 8.6,
+        "tier": "CRITICAL"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 35,
+        "unit": "bottles",
+        "status": "CRITICAL",
+        "days_of_cover": 4.1,
+        "tier": "CRITICAL"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 14,
+        "unit": "inhalers",
+        "status": "CRITICAL",
+        "days_of_cover": 6.9,
+        "tier": "CRITICAL"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 3,
+        "unit": "vials",
+        "status": "CRITICAL",
+        "days_of_cover": 3.7,
+        "tier": "CRITICAL"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3254,76.9558"
+  },
+  {
+    "id": "phc_aliyar",
+    "name": "PHC Aliyar",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Anaimalai Block, Coimbatore District",
+    "block": "Anaimalai",
+    "district": "Coimbatore",
+    "lat": 10.402,
+    "lng": 76.9712,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 5688,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 584,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 79.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 552,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 44.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 515,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 61.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 451,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 45.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 420,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 117.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 415,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 60.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 400,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 350,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 243.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 322,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 27.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 296,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 24.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 289,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 43.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 281,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 276,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 42.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 239,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 21.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 223,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 75,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 58.6,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.402,76.9712"
+  },
+  {
+    "id": "phc_anaimalai",
+    "name": "PHC Anaimalai Town",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Anaimalai Block, Coimbatore District",
+    "block": "Anaimalai",
+    "district": "Coimbatore",
+    "lat": 10.5821,
+    "lng": 76.9324,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 5632,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 2,
+    "medicines": [
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 596,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 54.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 592,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 92.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 578,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 93.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 454,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 433,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 389,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 71.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 384,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 43.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 340,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 326,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 55.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 302,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 40.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 289,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 24.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 288,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 38.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 287,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 37.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 256,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 26.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 110,
+        "unit": "sachets",
+        "status": "CRITICAL",
+        "days_of_cover": 7.5,
+        "tier": "CRITICAL"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 8,
+        "unit": "vials",
+        "status": "CRITICAL",
+        "days_of_cover": 5.7,
+        "tier": "CRITICAL"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.5821,76.9324"
+  },
+  {
+    "id": "phc_pollachi_rural",
+    "name": "PHC Pollachi Rural",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Anaimalai Block, Coimbatore District",
+    "block": "Anaimalai",
+    "district": "Coimbatore",
+    "lat": 10.6601,
+    "lng": 77.0102,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 6222,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 1,
+    "medicines": [
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 575,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 52.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 543,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 45.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 535,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 44.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 457,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 47.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 442,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 440,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 433,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 44.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 430,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 82.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 389,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 30.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 376,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 56.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 370,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 34.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 368,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 31.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 339,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 48.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 264,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 31.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 252,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 39.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 9,
+        "unit": "ampoules",
+        "status": "CRITICAL",
+        "days_of_cover": 7.1,
+        "tier": "CRITICAL"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.6601,77.0102"
+  },
+  {
+    "id": "phc_kottur",
+    "name": "PHC Kottur",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Anaimalai Block, Coimbatore District",
+    "block": "Anaimalai",
+    "district": "Coimbatore",
+    "lat": 10.535,
+    "lng": 77.02,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 6293,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 595,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 65.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 585,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 72.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 524,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 52.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 489,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 98.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 423,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 52.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 405,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 33.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 401,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 30.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 391,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 38.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 390,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 54.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 382,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 30.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 375,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 56.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 290,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 275,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 22.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 273,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 37.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 253,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 21.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 242,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 23.0,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.535,77.02"
+  },
+  {
+    "id": "phc_samathur",
+    "name": "PHC Samathur",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Anaimalai Block, Coimbatore District",
+    "block": "Anaimalai",
+    "district": "Coimbatore",
+    "lat": 10.575,
+    "lng": 76.995,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 7246,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 594,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 71.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 584,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 74.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 569,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 49.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 562,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 46.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 542,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 75.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 529,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 41.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 527,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 73.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 471,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 65.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 428,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 42.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 427,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 63.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 426,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 410,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 335,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 25.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 322,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 26.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 280,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 57.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 240,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 18.8,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.575,76.995"
+  },
+  {
+    "id": "phc_madukkarai",
+    "name": "PHC Madukkarai",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Madukkarai Block, Coimbatore District",
+    "block": "Madukkarai",
+    "district": "Coimbatore",
+    "lat": 10.902,
+    "lng": 76.96,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 6543,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 592,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 84.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 537,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 47.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 472,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 57.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 467,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 43.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 447,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 445,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 71.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 440,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 54.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 433,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 39.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 413,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 54.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 405,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 387,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 31.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 338,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 26.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 332,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 34.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 301,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 59.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 295,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 37.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 239,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 33.9,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.902,76.96"
+  },
+  {
+    "id": "phc_ettimadai",
+    "name": "PHC Ettimadai",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Madukkarai Block, Coimbatore District",
+    "block": "Madukkarai",
+    "district": "Coimbatore",
+    "lat": 10.908,
+    "lng": 76.898,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 5800,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 593,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 47.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 511,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 38.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 486,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 38.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 460,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 444,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 38.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 392,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 340,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 28.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 335,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 32.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 325,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 50.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 316,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 40.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 303,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 46.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 297,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 27.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 266,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 21.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 259,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 22.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 241,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 22.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 232,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 27.9,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.908,76.898"
+  },
+  {
+    "id": "phc_chettipalayam",
+    "name": "PHC Chettipalayam",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Madukkarai Block, Coimbatore District",
+    "block": "Madukkarai",
+    "district": "Coimbatore",
+    "lat": 10.932,
+    "lng": 77.042,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 6504,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 596,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 114.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 596,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 56.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 533,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 48.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 515,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 60.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 480,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 471,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 464,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 82.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 453,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 49.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 401,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 41.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 364,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 34.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 320,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 30.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 311,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 33.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 280,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 37.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 261,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 36.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 235,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 22.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 224,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 41.3,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.932,77.042"
+  },
+  {
+    "id": "phc_kinathukadavu",
+    "name": "PHC Kinathukadavu",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Madukkarai Block, Coimbatore District",
+    "block": "Madukkarai",
+    "district": "Coimbatore",
+    "lat": 10.82,
+    "lng": 77.022,
+    "phone": "+91 4253 222100",
+    "is_stale": true,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 1440,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 13.6,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 90,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.9,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 90,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.6,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 90,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.4,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 90,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.3,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.3,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.8,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.9,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.3,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 13.1,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 90,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 13.9,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 90,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 14.5,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 12.9,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 90,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 15.0,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 90,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 14.7,
+        "tier": "BLIND_SPOT"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 90,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 14.5,
+        "tier": "BLIND_SPOT"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.82,77.022"
+  },
+  {
+    "id": "phc_thondamuthur",
+    "name": "PHC Thondamuthur",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Madukkarai Block, Coimbatore District",
+    "block": "Madukkarai",
+    "district": "Coimbatore",
+    "lat": 10.995,
+    "lng": 76.832,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 6355,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 591,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 47.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 575,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 49.4,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 559,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 55.3,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 528,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 51.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 450,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 70.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 447,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 35.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 444,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 40.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 434,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 84.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 395,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 57.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 321,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 49.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 304,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 28.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 280,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 23.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 276,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 45.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 273,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 21.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 255,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 31.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 223,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 18.7,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.995,76.832"
+  },
+  {
+    "id": "phc_pooluvapatti",
+    "name": "PHC Pooluvapatti",
+    "type": "phc",
+    "type_label": "Primary Health Centre (PHC)",
+    "category": "FACILITY",
+    "address": "Madukkarai Block, Coimbatore District",
+    "block": "Madukkarai",
+    "district": "Coimbatore",
+    "lat": 10.97,
+    "lng": 76.785,
+    "phone": "+91 4253 222100",
+    "is_stale": false,
+    "data_source": "GOVT_HEALTH_SYSTEM",
+    "total_stock_count": 6779,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 600,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 99.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 588,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 48.7,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 519,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "days_of_cover": 95.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 510,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 63.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 509,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "days_of_cover": 84.1,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 485,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 60.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 474,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "days_of_cover": 39.9,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 407,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 50.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 402,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 74.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 375,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "days_of_cover": 42.6,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 361,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "days_of_cover": 30.0,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 332,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 29.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 331,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 23.5,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 321,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 44.8,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 311,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "days_of_cover": 46.2,
+        "tier": "SAFE"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 254,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "days_of_cover": 31.7,
+        "tier": "SAFE"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.97,76.785"
+  },
+  {
+    "id": "pharma_apollo_cbe",
+    "name": "Apollo Pharmacy \u2014 Gandhipuram",
+    "type": "pharmacy",
+    "type_label": "Retail Chemist & Medical Store",
+    "category": "PHARMACY",
+    "address": "Cross Cut Road, Gandhipuram, Coimbatore",
+    "district": "coimbatore",
+    "lat": 10.998,
+    "lng": 76.965,
+    "phone": "+91 422 2490111",
+    "registration_number": "TN-CBE-2021-9981",
+    "data_source": "VERIFIED_PHARMACY",
+    "verified": true,
+    "total_stock_count": 941,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 84,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 84,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 83,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 78,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b945.00 / bot"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 75,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 68,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 65,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 61,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 57,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 56,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 53,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 49,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 40,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 36,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 27,
+        "unit": "sachets",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 25,
+        "unit": "capsules",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.998,76.965"
+  },
+  {
+    "id": "pharma_medplus_rs_puram",
+    "name": "MedPlus Pharmacy \u2014 RS Puram",
+    "type": "pharmacy",
+    "type_label": "Retail Chemist & Medical Store",
+    "category": "PHARMACY",
+    "address": "DB Road, RS Puram, Coimbatore",
+    "district": "coimbatore",
+    "lat": 11.006,
+    "lng": 76.949,
+    "phone": "+91 422 2548899",
+    "registration_number": "TN-CBE-2022-4412",
+    "data_source": "VERIFIED_PHARMACY",
+    "verified": true,
+    "total_stock_count": 914,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 85,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 80,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 78,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 74,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 72,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 65,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 58,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 55,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b945.00 / bot"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 50,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 50,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 49,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 45,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 45,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 43,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 40,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 25,
+        "unit": "tablets",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=11.006,76.949"
+  },
+  {
+    "id": "pharma_thulasi_pollachi",
+    "name": "Thulasi Pharmacies \u2014 Pollachi Bazaar",
+    "type": "pharmacy",
+    "type_label": "Retail Chemist & Medical Store",
+    "category": "PHARMACY",
+    "address": "Bazaar Street, Pollachi",
+    "district": "coimbatore",
+    "lat": 10.662,
+    "lng": 77.008,
+    "phone": "+91 4259 223450",
+    "registration_number": "TN-POL-2019-1102",
+    "data_source": "VERIFIED_PHARMACY",
+    "verified": true,
+    "total_stock_count": 827,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 74,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 72,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 72,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 71,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 67,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 64,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 63,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 52,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 44,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b945.00 / bot"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 43,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 38,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 36,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 34,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 33,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 32,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 32,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.662,77.008"
+  },
+  {
+    "id": "pharma_valparai_01",
+    "name": "Valparai Medical Store",
+    "type": "pharmacy",
+    "type_label": "Retail Chemist & Medical Store",
+    "category": "PHARMACY",
+    "address": "Main Road, Valparai, Coimbatore \u2013 642127",
+    "district": "coimbatore",
+    "lat": 10.3265,
+    "lng": 76.9585,
+    "phone": "+91 98765 43210",
+    "registration_number": "TN-VAL-2021-0142",
+    "data_source": "VERIFIED_PHARMACY",
+    "verified": true,
+    "total_stock_count": 666,
+    "distinct_medicines_count": 15,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 120,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 76,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 69,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 60,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 45,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 44,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 37,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 36,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 36,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 29,
+        "unit": "tablets",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 29,
+        "unit": "tablets",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 27,
+        "unit": "tablets",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 26,
+        "unit": "tablets",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 18,
+        "unit": "bottles",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b945.00 / bot"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 14,
+        "unit": "inhalers",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 0,
+        "unit": "ampoules",
+        "status": "OUT_OF_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3265,76.9585"
+  },
+  {
+    "id": "pharma_kovai_valparai",
+    "name": "Kovai Medicals \u2014 Valparai Hill Top",
+    "type": "pharmacy",
+    "type_label": "Retail Chemist & Medical Store",
+    "category": "PHARMACY",
+    "address": "Main Road, Valparai",
+    "district": "coimbatore",
+    "lat": 10.326,
+    "lng": 76.958,
+    "phone": "+91 4253 222301",
+    "registration_number": "TN-VAL-2020-0091",
+    "data_source": "MANUALLY_REPORTED",
+    "verified": true,
+    "total_stock_count": 974,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 85,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 83,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 81,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 80,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 75,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 74,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 71,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 64,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 61,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 59,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 57,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 56,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 43,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 38,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 32,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 15,
+        "unit": "bottles",
+        "status": "LOW_STOCK",
+        "price_inr": "\u20b945.00 / bot"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.326,76.958"
+  },
+  {
+    "id": "pharma_aliyar_retail",
+    "name": "Aliyar Medical & General Stores",
+    "type": "pharmacy",
+    "type_label": "Retail Chemist & Medical Store",
+    "category": "PHARMACY",
+    "address": "Aliyar Dam Junction, Aliyar Nagar",
+    "district": "coimbatore",
+    "lat": 10.404,
+    "lng": 76.973,
+    "phone": "+91 4259 288102",
+    "registration_number": "TN-POL-2023-8874",
+    "data_source": "VERIFIED_PHARMACY",
+    "verified": true,
+    "total_stock_count": 951,
+    "distinct_medicines_count": 16,
+    "critical_shortages_count": 0,
+    "medicines": [
+      {
+        "medicine_id": "med_pcm_syr",
+        "medicine_name": "Paracetamol Syrup 60ml",
+        "quantity": 80,
+        "unit": "bottles",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b945.00 / bot"
+      },
+      {
+        "medicine_id": "med_zinc",
+        "medicine_name": "Zinc Sulfate 20mg",
+        "quantity": 80,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_alben",
+        "medicine_name": "Albendazole 400mg",
+        "quantity": 77,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_asv",
+        "medicine_name": "Anti-Snake Venom 10ml Inj",
+        "quantity": 73,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_pcm",
+        "medicine_name": "Paracetamol 500mg",
+        "quantity": 69,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_metformin",
+        "medicine_name": "Metformin 500mg",
+        "quantity": 64,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_azithro",
+        "medicine_name": "Azithromycin 500mg",
+        "quantity": 64,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_atropine",
+        "medicine_name": "Atropine Sulfate 0.6mg/ml Inj",
+        "quantity": 64,
+        "unit": "ampoules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_salbutamol",
+        "medicine_name": "Salbutamol Inhaler 100mcg",
+        "quantity": 63,
+        "unit": "inhalers",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amlo",
+        "medicine_name": "Amlodipine 5mg",
+        "quantity": 62,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ors",
+        "medicine_name": "ORS Sachets 20.5g",
+        "quantity": 55,
+        "unit": "sachets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_ifa",
+        "medicine_name": "Iron and Folic Acid",
+        "quantity": 53,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_arv",
+        "medicine_name": "Anti-Rabies Vaccine 0.5ml",
+        "quantity": 51,
+        "unit": "vials",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_cetirizine",
+        "medicine_name": "Cetirizine 10mg",
+        "quantity": 34,
+        "unit": "tablets",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox",
+        "medicine_name": "Amoxicillin 250mg",
+        "quantity": 32,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      },
+      {
+        "medicine_id": "med_amox_500",
+        "medicine_name": "Amoxicillin 500mg",
+        "quantity": 30,
+        "unit": "capsules",
+        "status": "IN_STOCK",
+        "price_inr": "\u20b92.50 / tab"
+      }
+    ],
+    "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.404,76.973"
+  }
+]

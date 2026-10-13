@@ -22,6 +22,7 @@ export const translations = {
     nav_national_dashboard: "National Surveillance",
     nav_deduplication: "Catalogue Deduplication",
     nav_audit_logs: "Regulatory Audit Trail",
+    nav_network_map: "Network Map & Stocks",
     
     // Tiers
     tier_critical: "CRITICAL",
@@ -150,6 +151,7 @@ export const translations = {
     nav_national_dashboard: "தேசிய கண்காணிப்பு",
     nav_deduplication: "மருந்து அட்டவணை திருத்தம்",
     nav_audit_logs: "தணிக்கை பதிவு",
+    nav_network_map: "வரைபட இருப்பு விவரம்",
     
     // Tiers
     tier_critical: "ஆபத்தான நிலை",

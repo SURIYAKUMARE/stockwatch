@@ -1,4 +1,5 @@
-import type { Centre, Medicine, KPIData, AlertItem, MatrixData } from '../types';
+import type { Centre, Medicine, KPIData, AlertItem, MatrixData, MapLocationItem } from '../types';
+import rawMapLocations from './mapFallbackData.json';
 
 export const FALLBACK_CENTRES: Centre[] = [
   { id: 'phc_valparai', name: 'PHC Valparai', block: 'Valparai', district: 'Coimbatore', is_stale: false },
@@ -284,3 +285,5 @@ export const FALLBACK_MATRIX: MatrixData = {
     };
   }),
 };
+
+export const FALLBACK_MAP_LOCATIONS: MapLocationItem[] = rawMapLocations as MapLocationItem[];

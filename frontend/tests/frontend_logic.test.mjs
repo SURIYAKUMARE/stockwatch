@@ -182,3 +182,48 @@ describe('Medicine Deduplication Guards', () => {
     assert.strictEqual(totalAcrossAll, 80 + 420 + 40 + 25); // 565, not merged
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUITE 4: Map Locations & Medicine Stock Breakdown Tests
+// ─────────────────────────────────────────────────────────────────────────────
+import { readFileSync } from 'node:fs';
+
+describe('Map Locations & Stock Visibility Tests', () => {
+  it('map locations accurately aggregate facilities and retail chemist shops', () => {
+    const mapData = JSON.parse(readFileSync('./src/db/mapFallbackData.json', 'utf8'));
+    assert.ok(Array.isArray(mapData));
+    assert.ok(mapData.length >= 18);
+
+    const facilities = mapData.filter((l) => l.category === 'FACILITY');
+    const pharmacies = mapData.filter((l) => l.category === 'PHARMACY');
+    assert.strictEqual(facilities.length, 12);
+    assert.strictEqual(pharmacies.length, 6);
+
+    for (const loc of mapData) {
+      assert.ok(typeof loc.lat === 'number' && loc.lat > 0, `Invalid lat for ${loc.name}`);
+      assert.ok(typeof loc.lng === 'number' && loc.lng > 0, `Invalid lng for ${loc.name}`);
+      assert.ok(typeof loc.name === 'string' && loc.name.length > 0);
+      assert.ok(typeof loc.total_stock_count === 'number' && loc.total_stock_count >= 0);
+      assert.ok(typeof loc.distinct_medicines_count === 'number' && loc.distinct_medicines_count > 0);
+      assert.ok(Array.isArray(loc.medicines) && loc.medicines.length > 0);
+    }
+  });
+
+  it('shop medicine breakdown accurately details medicine name, quantity, and status', () => {
+    const mapData = JSON.parse(readFileSync('./src/db/mapFallbackData.json', 'utf8'));
+    const valparai = mapData.find((l) => l.id === 'phc_valparai');
+    assert.ok(valparai);
+    assert.strictEqual(valparai.name, 'PHC Valparai');
+
+    const pcm = valparai.medicines.find((m) => m.medicine_id === 'med_pcm');
+    assert.ok(pcm);
+    assert.ok(typeof pcm.quantity === 'number');
+    assert.ok(typeof pcm.medicine_name === 'string');
+    assert.ok(typeof pcm.status === 'string');
+
+    const pharmacy = mapData.find((l) => l.category === 'PHARMACY');
+    assert.ok(pharmacy);
+    assert.ok(pharmacy.medicines.length > 0);
+    assert.ok(pharmacy.total_stock_count > 0);
+  });
+});
