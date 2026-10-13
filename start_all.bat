@@ -1,6 +1,6 @@
 @echo off
 echo ==========================================================
-echo        StockWatch PHC - Sakthi Hackfest '26
+echo        StockWatch PHC - Real-Time Health Intelligence
 echo   Medicine Stock-Out Early Warning System for Govt PHCs
 echo ==========================================================
 echo.

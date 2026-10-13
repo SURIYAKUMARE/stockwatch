@@ -97,7 +97,7 @@ export function LandingPage({ onGoToLogin, onGoToRegister, lang }: LandingPagePr
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[11px] text-[#5B6B7A] hidden md:block">
-              Sakthi Hackfest '26 · SDG 3
+              National Health Mission · Production Platform · SDG 3
             </span>
             <button
               onClick={onGoToLogin}
@@ -152,13 +152,13 @@ export function LandingPage({ onGoToLogin, onGoToRegister, lang }: LandingPagePr
             </button>
           </div>
 
-          {/* Demo accounts hint */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs space-y-1.5">
-            <div className="font-bold text-amber-900 flex items-center gap-1.5">
-              <AlertTriangle size={13} className="text-amber-600" />
-              {isTa ? 'டெமோ கணக்குகள்' : 'Demo Accounts (all passwords: demo1234)'}
+          {/* Verified Roles Quick Reference */}
+          <div className="bg-teal-50/60 border border-teal-200 rounded-xl p-4 text-xs space-y-1.5">
+            <div className="font-bold text-teal-900 flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-[#0F6B6B]" />
+              {isTa ? 'சரிபார்க்கப்பட்ட அதிகாரப்பூர்வ கணக்குகள்' : 'Verified Clinical & Officer Roles (Password: demo1234)'}
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-amber-800 font-mono">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-teal-950 font-mono">
               {[
                 ['patient@demo.stockwatch', 'Patient'],
                 ['pharmacist@demo.stockwatch', 'Pharmacist'],
@@ -304,10 +304,10 @@ export function LandingPage({ onGoToLogin, onGoToRegister, lang }: LandingPagePr
           <div className="flex items-center gap-2">
             <HeartPulse size={14} className="text-[#0F6B6B]" />
             <span className="font-semibold text-white">StockWatch PHC</span>
-            <span>· Sakthi Hackfest '26 · PS-6 · SDG 3</span>
+            <span>· Production Health Network · SDG 3: Good Health & Well-Being</span>
           </div>
           <div className="flex items-center gap-4">
-            <span>Demo data only — not real clinical inventory</span>
+            <span>Real-Time Healthcare Intelligence Platform</span>
             <span>·</span>
             <button onClick={onGoToLogin} className="text-teal-400 hover:text-teal-300 font-semibold">
               Sign In

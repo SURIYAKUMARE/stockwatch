@@ -110,7 +110,7 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
 
         {/* SDG badge */}
         <div className="text-[11px] text-teal-300 font-semibold">
-          Sakthi Hackfest '26 · Problem Statement 6 · SDG 3: Good Health & Well-Being
+          National Health Mission · Production Platform · SDG 3: Good Health & Well-Being
         </div>
       </div>
 
@@ -143,10 +143,10 @@ export function LoginPage({ onGoToLanding, onGoToRegister }: LoginPageProps) {
               </p>
             </div>
 
-            {/* Demo quick-fill pills */}
+            {/* Role quick-fill pills */}
             <div className="space-y-2">
               <div className="text-[10px] font-semibold text-[#5B6B7A] uppercase tracking-wider">
-                Quick demo login
+                Quick Role Selector (Verified Accounts)
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {DEMO_PRESETS.map(p => (

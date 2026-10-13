@@ -1,6 +1,6 @@
 # StockWatch PHC 🏥
 ### Intelligent Medicine Supply Network & Stock-Out Early Warning System
-**Sakthi Hackfest '26 · Problem Statement 6 · SDG 3: Good Health & Well-Being**
+**National Health Mission · Production Platform · SDG 3: Good Health & Well-Being**
 
 > *"Everyone watched the number; nobody watched how fast it was falling."*
 

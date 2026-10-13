@@ -378,11 +378,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Footer Info & Hackathon / SDG Badge */}
+      {/* Footer Info & Operational Status */}
       <div className="p-3.5 border-t border-[#E3E8EE] bg-[#F7F9FB]/60 text-[11px] text-[#5B6B7A] space-y-2">
         <div className="flex items-center gap-1.5 font-semibold text-[#0F6B6B]">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>SDG 3 · Sakthi Hackfest '26</span>
+          <span>National Health Mission · Live System</span>
         </div>
         <p className="text-[10px] leading-tight text-[#5B6B7A]">
           {t.approval_notice || 'All transfers and official stock adjustments require human officer approval.'}

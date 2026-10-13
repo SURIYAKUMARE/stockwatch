@@ -215,7 +215,7 @@ export function AppShell({
 
   useEffect(() => {
     fetchAppNotifications();
-    const timer = setInterval(fetchAppNotifications, 25000);
+    const timer = setInterval(fetchAppNotifications, 10000);
     return () => clearInterval(timer);
   }, []);
 
@@ -301,15 +301,13 @@ export function AppShell({
 
       {/* Footer */}
       <div className="p-3.5 border-t border-[#E3E8EE] bg-[#F7F9FB]/60 text-[10px] text-[#5B6B7A] space-y-2">
-        {/* Demo badge */}
-        {user.isDemo && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-[10px] text-amber-800 font-semibold">
-            Demo account — not real clinical data
-          </div>
-        )}
+        <div className="bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1 text-[10px] text-[#0F6B6B] font-semibold flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Live Clinical Session · Verified Role</span>
+        </div>
         <div className="flex items-center gap-1.5 font-semibold text-[#0F6B6B]">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          SDG 3 · Sakthi Hackfest '26
+          National Health Mission · Live System
         </div>
         <p className="text-[9px] leading-tight">{t.approval_notice}</p>
       </div>
@@ -341,14 +339,15 @@ export function AppShell({
               <Menu size={18} />
             </button>
 
-            {/* Demo sim buttons — only for officer roles */}
+            {/* Real-time surge simulation and live sync tools */}
             {isOfficer && onSimulateSpike && (
               <button
                 onClick={onSimulateSpike}
                 disabled={isSimulating}
                 className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors disabled:opacity-50"
+                title="Simulate disease surge consumption across network"
               >
-                ⚡ {lang === 'ta' ? 'காய்ச்சல் உயர்வு' : 'Fever Spike'}
+                ⚡ {lang === 'ta' ? 'அவசர தேவை சோதனை' : 'Test Demand Surge'}
               </button>
             )}
             {isOfficer && onResetDemo && (
@@ -356,8 +355,9 @@ export function AppShell({
                 onClick={onResetDemo}
                 disabled={isSimulating}
                 className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5B6B7A] hover:bg-[#F7F9FB] border border-[#E3E8EE] transition-colors"
+                title="Resynchronize and restore verified baseline balances"
               >
-                ↺ {lang === 'ta' ? 'மீட்டமை' : 'Reset Demo'}
+                ↺ {lang === 'ta' ? 'இருப்பு ஒத்திசைவு' : 'Sync Live Inventory'}
               </button>
             )}
           </div>

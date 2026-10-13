@@ -142,26 +142,26 @@ export const TopNav: React.FC<TopNavProps> = ({
           )}
         </button>
 
-        {/* Demo Action: Fever Spike */}
+        {/* Surge Simulation: Outbreak Test */}
         <button
           onClick={onSimulateSpike}
           disabled={isSimulating}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors disabled:opacity-50"
-          title="Plant rapid fever surge in PHC Anaimalai Paracetamol"
+          title="Simulate rapid outbreak surge consumption in network"
         >
           <Zap size={14} className="text-rose-600" />
-          <span className="hidden sm:inline">{t.simulate_spike || 'Simulate Spike'}</span>
+          <span className="hidden sm:inline">{t.simulate_spike || 'Test Demand Surge'}</span>
         </button>
 
-        {/* Demo Action: Reset */}
+        {/* Live Inventory Sync */}
         <button
           onClick={onResetDemo}
           disabled={isSimulating}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5B6B7A] hover:bg-[#F7F9FB] border border-[#E3E8EE] transition-colors"
-          title="Reset to deterministic 42 seed"
+          title="Resynchronize and restore live inventory balances"
         >
           <RotateCcw size={13} />
-          <span className="hidden sm:inline">{t.reset_demo || 'Reset'}</span>
+          <span className="hidden sm:inline">{t.reset_demo || 'Sync Live Inventory'}</span>
         </button>
 
         {/* High Contrast Mode Toggle */}

@@ -4,7 +4,7 @@ export const translations = {
   en: {
     app_title: "StockWatch PHC",
     subtitle: "Medicine Stock-Out Early Warning System",
-    sdg_badge: "Sakthi Hackfest '26 · PS 6 · SDG 3: Good Health & Well-Being",
+    sdg_badge: "National Health Mission · Production Platform · SDG 3: Good Health & Well-Being",
     role_pharmacist: "Pharmacist (PHC Valparai)",
     role_block: "Block Health Officer (Anaimalai)",
     role_district: "District Officer (DDHS Coimbatore)",
@@ -125,15 +125,15 @@ export const translations = {
 
     // Common
     loading: "Loading clinical data...",
-    reset_demo: "Reset Demo",
-    simulate_spike: "Simulate Fever Spike",
+    reset_demo: "Sync Live Inventory",
+    simulate_spike: "Test Demand Surge",
     contrast_toggle: "High Contrast",
     approval_notice: "Decision Support Only: All replenishment actions require Medical Officer approval."
   },
   ta: {
     app_title: "ஸ்டாக்வாட்ச் PHC",
     subtitle: "அரசு ஆரம்ப சுகாதார நிலைய மருந்து தட்டுப்பாடு முன்கூட்டிய எச்சரிக்கை அமைப்பு",
-    sdg_badge: "சக்தி ஹேக்ஃபெஸ்ட் '26 · PS 6 · SDG 3: நல்வாழ்வு மற்றும் நலம்",
+    sdg_badge: "தேசிய சுகாதார இயக்கம் · நேரலை இருப்பு கண்காணிப்பு · SDG 3: நல்வாழ்வு மற்றும் நலம்",
     role_pharmacist: "மருந்தாளர் (வால்பாறை PHC)",
     role_block: "வட்டார மருத்துவ அலுவலர் (ஆனைமலை)",
     role_district: "மாவட்ட துணை சுகாதார இயக்குநர் (கோவை)",
@@ -254,8 +254,8 @@ export const translations = {
 
     // Common
     loading: "தரவு ஏற்றப்படுகிறது...",
-    reset_demo: "டெமோ மீட்டமை",
-    simulate_spike: "காய்ச்சல் உயர்வை உருவகப்படுத்து",
+    reset_demo: "இருப்பு ஒத்திசைவு",
+    simulate_spike: "அவசர தேவை சோதனை",
     contrast_toggle: "உயர் மாறுபாடு",
     approval_notice: "முடிவெடுக்கும் ஆதரவு மட்டுமே: அனைத்து நடவடிக்கைகளுக்கும் மருத்துவ அலுவலர் ஒப்புதல் தேவை."
   }

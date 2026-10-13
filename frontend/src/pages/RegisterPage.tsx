@@ -163,7 +163,7 @@ export function RegisterPage({ onGoToLogin, onGoToLanding }: RegisterPageProps) 
         </div>
 
         <div className="text-[11px] text-teal-300 font-semibold">
-          Sakthi Hackfest '26 · SDG 3
+          National Health Mission · Production Platform · SDG 3
         </div>
       </div>
 

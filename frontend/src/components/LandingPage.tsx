@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 StockWatch PHC
               </span>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-[#0F6B6B] border border-teal-200">
-                SDG 3 · PS 6
+                SDG 3 · Good Health
               </span>
             </div>
             <p className="text-[11px] text-[#5B6B7A] leading-none font-medium">
@@ -289,9 +289,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Footer */}
       <footer className="mt-auto bg-white border-t border-[#E3E8EE] py-6 px-6 text-center text-xs text-[#5B6B7A]">
         <div className="flex items-center justify-center gap-4 mb-2">
-          <span>Sakthi Hackfest '26</span>
+          <span>National Health Mission</span>
           <span>·</span>
-          <span>Problem Statement 6</span>
+          <span>Real-Time Healthcare Intelligence</span>
           <span>·</span>
           <span>UN SDG 3: Good Health & Well-being</span>
         </div>

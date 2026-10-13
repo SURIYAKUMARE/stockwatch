@@ -195,10 +195,15 @@ export function App() {
       setIsOnline(false);
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    // Live background polling for real-time inventory and alerts
+    const realTimePoll = setInterval(() => {
+      if (navigator.onLine && !document.hidden) {
+        refreshAllData();
+      }
+    }, 12000);
 
     return () => {
+      clearInterval(realTimePoll);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);

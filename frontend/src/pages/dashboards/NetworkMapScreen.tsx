@@ -94,6 +94,12 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
 
   useEffect(() => {
     fetchMapData();
+    const mapPoll = setInterval(() => {
+      if (navigator.onLine && !document.hidden) {
+        fetchMapData();
+      }
+    }, 15000);
+    return () => clearInterval(mapPoll);
   }, [categoryFilter, selectedMedicineId]);
 
   // Overall metrics across the district network
