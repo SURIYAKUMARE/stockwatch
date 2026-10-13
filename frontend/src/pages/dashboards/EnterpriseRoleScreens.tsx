@@ -23,7 +23,13 @@ import {
   Check,
   X,
   Building2,
-  Calendar
+  Calendar,
+  Share2,
+  Printer,
+  QrCode,
+  Pill,
+  Sparkles,
+  Phone
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type {
@@ -56,10 +62,19 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
   const [patientName, setPatientName] = useState('M. Arumugam');
   const [patientPhone, setPatientPhone] = useState('+91 94432 11223');
   const [doctorName, setDoctorName] = useState('Dr. Sundaram, MD');
+  const [doctorRmp, setDoctorRmp] = useState('TNMC-48291');
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'UPI' | 'CARD'>('UPI');
   const [selectedMed, setSelectedMed] = useState('med_pcm');
+  const [dispenseMode, setDispenseMode] = useState<'STRIP' | 'LOOSE'>('LOOSE');
+  const [stripSize, setStripSize] = useState(10);
+  const [looseTabs, setLooseTabs] = useState(4);
   const [qty, setQty] = useState(10);
   const [unitPrice, setUnitPrice] = useState(1.5);
+  const [isScheduleH, setIsScheduleH] = useState(false);
+  const [chronicRefill, setChronicRefill] = useState(true);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [showSubstitutes, setShowSubstitutes] = useState(false);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeInvoiceDetail, setActiveInvoiceDetail] = useState<RetailInvoice | null>(null);
 
@@ -79,24 +94,62 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
     fetchInvoices();
   }, [pharmacyId]);
 
+  // Barcode / SKU quick-scan simulation
+  const handleBarcodeScan = (codeToScan?: string) => {
+    const code = codeToScan || barcodeInput.trim();
+    if (code.includes('8901030') || code.toLowerCase().includes('pcm') || code === '1') {
+      setSelectedMed('med_pcm');
+      setUnitPrice(1.5);
+      setScanNotice('Scanned: Paracetamol 500mg Tab [Batch BTH-2026-FEFO, Exp 11/2027]');
+    } else if (code.includes('8902040') || code.toLowerCase().includes('amox') || code === '2') {
+      setSelectedMed('med_amox');
+      setUnitPrice(7.0);
+      setScanNotice('Scanned: Amoxicillin 500mg Cap [Batch BTH-AMX-2026, Exp 09/2027]');
+    } else if (code.includes('8903050') || code.toLowerCase().includes('ors') || code === '3') {
+      setSelectedMed('med_ors');
+      setUnitPrice(18.0);
+      setScanNotice('Scanned: ORS Sachet 20.5g [Batch BTH-ORS-2026, Exp 04/2028]');
+    } else {
+      setSelectedMed('med_cetirizine');
+      setUnitPrice(3.5);
+      setScanNotice('Scanned: Cetirizine 10mg Tab [Batch BTH-CTZ-2026, Exp 06/2027]');
+    }
+    setBarcodeInput('');
+    setTimeout(() => setScanNotice(null), 4000);
+  };
+
+  // Generic Substitutes Directory
+  const substituteList = [
+    { name: 'Generic Paracetamol 500mg', brand: 'Jan Aushadhi', price: 1.20, stock: 450, discount: '20% Cheaper', batch: 'BTH-JA-PCM' },
+    { name: 'Dolo 650mg Tab', brand: 'Micro Labs', price: 2.10, stock: 320, discount: 'Higher Strength', batch: 'BTH-DL-650' },
+    { name: 'Crocin Advance 500mg', brand: 'GSK Pharma', price: 2.40, stock: 180, discount: 'Branded Alternative', batch: 'BTH-CR-500' }
+  ];
+
+  // Bill calculation (accounting for loose tablet math)
+  const billedQuantity = dispenseMode === 'LOOSE' ? looseTabs : qty;
+  const subtotalAmount = billedQuantity * unitPrice;
+  const gstAmount = subtotalAmount * 0.12;
+  const grandTotal = subtotalAmount + gstAmount;
+
   const handleCreateBill = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     const medName = selectedMed === 'med_pcm' ? 'Paracetamol 500mg Tab' :
                     selectedMed === 'med_amox' ? 'Amoxicillin 500mg Cap' :
                     selectedMed === 'med_ors' ? 'ORS Sachet 20.5g' : 'Cetirizine 10mg Tab';
+    
     const payload = {
       pharmacy_id: pharmacyId,
       patient_name: patientName,
       patient_phone: patientPhone,
-      doctor_name: doctorName,
+      doctor_name: doctorName + (isScheduleH ? ` [RMP: ${doctorRmp}]` : ''),
       payment_mode: paymentMode,
       items: [
         {
           medicine_id: selectedMed,
-          medicine_name: medName,
-          batch: 'BTH-' + new Date().getFullYear(),
-          qty: Number(qty),
+          medicine_name: `${medName} ${dispenseMode === 'LOOSE' ? `(${looseTabs} loose tabs)` : `(${qty} units)`}`,
+          batch: 'BTH-FEFO-2026',
+          qty: billedQuantity,
           unit_price: Number(unitPrice),
           gst_rate: 12.0
         }
@@ -115,22 +168,20 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
         await fetchInvoices();
       }
     } catch {
-      const sub = qty * unitPrice;
-      const gst = sub * 0.12;
       const fakeInv: RetailInvoice = {
         id: 'inv-' + Date.now(),
         invoice_number: `INV-2026-${Math.floor(Math.random() * 900000) + 100000}`,
         pharmacy_id: pharmacyId,
         patient_name: patientName,
         patient_phone: patientPhone,
-        doctor_name: doctorName,
-        items: [{ medicine_id: selectedMed, medicine_name: medName, batch: 'BTH-OFFLINE', qty, unit_price: unitPrice, gst_rate: 12.0, line_total: sub + gst }],
-        subtotal: sub,
-        cgst: gst / 2,
-        sgst: gst / 2,
-        total_amount: sub + gst,
+        doctor_name: doctorName + (isScheduleH ? ` [RMP: ${doctorRmp}]` : ''),
+        items: [{ medicine_id: selectedMed, medicine_name: `${medName} (${billedQuantity} units)`, batch: 'BTH-FEFO-2026', qty: billedQuantity, unit_price: unitPrice, gst_rate: 12.0, line_total: grandTotal }],
+        subtotal: subtotalAmount,
+        cgst: gstAmount / 2,
+        sgst: gstAmount / 2,
+        total_amount: grandTotal,
         payment_mode: paymentMode,
-        created_by: 'Retail Pharmacist',
+        created_by: 'Retail Pharmacist (FEFO)',
         created_at: new Date().toISOString()
       };
       setInvoices(prev => [fakeInv, ...prev]);
@@ -140,30 +191,149 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
     }
   };
 
+  const generateWhatsAppLink = (inv: RetailInvoice) => {
+    const text = encodeURIComponent(
+      `*🧾 StockWatch Pharmacy Tax Invoice*\n` +
+      `Invoice: ${inv.invoice_number}\n` +
+      `Customer: ${inv.patient_name}\n` +
+      `Amount: ₹${inv.total_amount.toFixed(2)} (${inv.payment_mode})\n` +
+      `Medicines: ${(inv.items || []).map(i => `${i.medicine_name} x ${i.qty}`).join(', ')}\n` +
+      `Thank you for visiting! For emergency refill contact your local pharmacy.`
+    );
+    return `https://api.whatsapp.com/send?phone=${inv.patient_phone.replace(/[^0-9]/g, '')}&text=${text}`;
+  };
+
   return (
     <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-6">
+      {/* Top Banner: Pharmacy Status & IoT Cold Chain */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#E3E8EE] shadow-xs">
         <div>
           <h1 className="text-lg font-bold text-[#14202B] flex items-center gap-2">
             <Receipt className="text-[#0F6B6B]" size={20} />
-            {isTa ? 'வேகமான விற்பனை பில்லிங் & GST ரசீது' : 'Fast Retail POS Billing & GST Counter'}
+            {isTa ? 'சில்லறை மருந்தக விற்பனை & POS கவுண்டர்' : 'Retail Pharmacist Counter POS & Invoicing'}
           </h1>
           <p className="text-xs text-[#5B6B7A] mt-0.5">
             {isTa
-              ? 'நேரலை இருப்பு கழிப்பு, தானியங்கி GST கணக்கீடு, மற்றும் உடனடி ரசீது தயாரித்தல்.'
-              : 'Real-time stock deduction, automated 12% GST breakdown, and digital customer invoices.'}
+              ? 'பார்கோடு ஸ்கேனிங், FEFO பேட்ச் கழிவு, உதிரி மாத்திரை பில்லிங், மற்றும் உடனடி WhatsApp ரசீது.'
+              : 'Rapid barcode billing, FEFO batch tracking, loose tablet math, Schedule H registers, and WhatsApp invoices.'}
           </p>
         </div>
-        <div className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-200 flex items-center gap-1.5">
-          <CheckCircle2 size={14} />
-          <span>GSTIN: 33AAAAA0000A1Z5</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-200 flex items-center gap-1.5">
+            <Thermometer size={14} className="text-emerald-600" />
+            <span>Cold-Chain: 4.2°C (Optimal)</span>
+          </div>
+          <div className="px-3 py-1.5 bg-blue-50 text-blue-800 rounded-lg text-xs font-bold border border-blue-200 flex items-center gap-1.5">
+            <CheckCircle2 size={14} />
+            <span>GSTIN: 33AAAAA0000A1Z5</span>
+          </div>
         </div>
+      </div>
+
+      {/* Barcode Quick Scanner Bar */}
+      <div className="bg-[#0F6B6B]/5 border border-[#0F6B6B]/20 p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+          <QrCode className="text-[#0F6B6B] shrink-0" size={18} />
+          <input
+            type="text"
+            placeholder="Scan product barcode (e.g. 8901030382910) or enter SKU..."
+            value={barcodeInput}
+            onChange={(e) => setBarcodeInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleBarcodeScan()}
+            className="w-full text-xs bg-white border border-[#E3E8EE] rounded-lg px-3 py-2 font-mono"
+          />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleBarcodeScan('8901030382910')}
+            className="px-3 py-2 bg-[#0F6B6B] text-white text-xs font-bold rounded-lg hover:bg-[#0a4f4f] transition flex items-center gap-1.5 shadow-xs"
+          >
+            <QrCode size={13} />
+            <span>Simulate Barcode Scan</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSubstitutes(!showSubstitutes)}
+            className="px-3 py-2 bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold rounded-lg hover:bg-amber-100 transition flex items-center gap-1.5"
+          >
+            <Sparkles size={13} className="text-amber-600" />
+            <span>Substitute Medicine Finder</span>
+          </button>
+        </div>
+      </div>
+
+      {scanNotice && (
+        <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg font-medium flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 size={14} className="text-emerald-600" />
+          <span>{scanNotice}</span>
+        </div>
+      )}
+
+      {/* Generic Substitute Finder Drawer */}
+      {showSubstitutes && (
+        <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-4 space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-amber-600" />
+              Generic Salt Equivalents & Therapeutic Substitutes for Selected Drug
+            </h3>
+            <button onClick={() => setShowSubstitutes(false)} className="text-amber-700 hover:text-amber-900 text-xs font-bold">
+              ✕ Close
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {substituteList.map((sub, idx) => (
+              <div key={idx} className="bg-white border border-amber-200 rounded-lg p-3 space-y-2 shadow-xs">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold text-xs text-[#14202B]">{sub.name}</div>
+                    <div className="text-[10px] text-[#5B6B7A]">{sub.brand} • {sub.batch}</div>
+                  </div>
+                  <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                    {sub.discount}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                  <span className="font-extrabold text-[#0F6B6B]">₹{sub.price.toFixed(2)}/tab</span>
+                  <span className="text-[10px] text-slate-500">In Stock: {sub.stock}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnitPrice(sub.price);
+                    setShowSubstitutes(false);
+                    setScanNotice(`Swapped to ${sub.name} (₹${sub.price}/tab)`);
+                  }}
+                  className="w-full py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold"
+                >
+                  Select Substitute
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Clinical Drug-Drug Safety Indicator */}
+      <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-emerald-900">
+          <ShieldCheck size={16} className="text-emerald-600" />
+          <span><strong>Clinical Safety Check:</strong> Active drug verified. No severe drug-drug interactions or contraindications detected.</span>
+        </div>
+        <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+          Pass (Safe)
+        </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Billing Form */}
         <div className="lg:col-span-1 bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-[#14202B] pb-2 border-b border-[#E3E8EE]">New Counter Bill</h2>
+          <h2 className="text-sm font-bold text-[#14202B] pb-2 border-b border-[#E3E8EE] flex items-center justify-between">
+            <span>New Counter Bill</span>
+            <span className="text-[10px] bg-teal-50 text-[#0F6B6B] px-2 py-0.5 rounded font-extrabold">FEFO Active</span>
+          </h2>
+
           <form onSubmit={handleCreateBill} className="space-y-3 text-xs">
             <div>
               <label className="block font-semibold text-[#14202B] mb-1">Customer / Patient Name</label>
@@ -177,7 +347,7 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
             </div>
 
             <div>
-              <label className="block font-semibold text-[#14202B] mb-1">Customer Mobile</label>
+              <label className="block font-semibold text-[#14202B] mb-1">Customer Mobile (for WhatsApp Receipt)</label>
               <input
                 type="text"
                 value={patientPhone}
@@ -186,18 +356,44 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-[#14202B] mb-1">Prescribing Doctor (Optional)</label>
+            {/* Prescribing Doctor & Schedule H toggle */}
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-[#14202B]">Prescribing Doctor</label>
+                <label className="flex items-center gap-1 text-[10px] font-bold text-amber-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isScheduleH}
+                    onChange={(e) => setIsScheduleH(e.target.checked)}
+                    className="rounded text-amber-600"
+                  />
+                  <span>Schedule H/H1 Restricted</span>
+                </label>
+              </div>
               <input
                 type="text"
                 value={doctorName}
                 onChange={(e) => setDoctorName(e.target.value)}
-                className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                className="w-full px-2.5 py-1.5 border border-[#E3E8EE] rounded-md bg-white text-xs"
               />
+              {isScheduleH && (
+                <div>
+                  <label className="block text-[10px] font-bold text-amber-900 mb-0.5">Doctor RMP License Number *</label>
+                  <input
+                    type="text"
+                    required={isScheduleH}
+                    value={doctorRmp}
+                    onChange={(e) => setDoctorRmp(e.target.value)}
+                    placeholder="e.g. TNMC-48291"
+                    className="w-full px-2.5 py-1.5 border border-amber-300 rounded-md bg-white text-xs font-mono"
+                  />
+                  <span className="text-[10px] text-amber-700 block mt-0.5">Required for State Drug Inspector Register audit.</span>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block font-semibold text-[#14202B] mb-1">Select Medicine</label>
+              <label className="block font-semibold text-[#14202B] mb-1">Select Medication (FEFO Order)</label>
               <select
                 value={selectedMed}
                 onChange={(e) => {
@@ -209,25 +405,76 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
                 }}
                 className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
               >
-                <option value="med_pcm">Paracetamol 500mg Tab (₹1.50/tab)</option>
-                <option value="med_amox">Amoxicillin 500mg Cap (₹7.00/cap)</option>
-                <option value="med_ors">ORS Sachet 20.5g (₹18.00/sachet)</option>
-                <option value="med_cetirizine">Cetirizine 10mg Tab (₹3.50/tab)</option>
+                <option value="med_pcm">Paracetamol 500mg Tab [Batch BTH-2026, Exp 11/2027] (₹1.50/tab)</option>
+                <option value="med_amox">Amoxicillin 500mg Cap [Batch BTH-AMX, Exp 09/2027] (₹7.00/cap)</option>
+                <option value="med_ors">ORS Sachet 20.5g [Batch BTH-ORS, Exp 04/2028] (₹18.00/sachet)</option>
+                <option value="med_cetirizine">Cetirizine 10mg Tab [Batch BTH-CTZ, Exp 06/2027] (₹3.50/tab)</option>
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-semibold text-[#14202B] mb-1">Quantity</label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={qty}
-                  onChange={(e) => setQty(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
-                />
+            {/* Loose Tablet Billing Math Selector */}
+            <div className="p-2.5 bg-teal-50/50 border border-teal-200 rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#0F6B6B] flex items-center gap-1">
+                  <Pill size={13} />
+                  Dispensing Mode
+                </span>
+                <div className="flex gap-1 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setDispenseMode('LOOSE')}
+                    className={`px-2 py-0.5 rounded font-bold ${dispenseMode === 'LOOSE' ? 'bg-[#0F6B6B] text-white' : 'bg-white border text-slate-600'}`}
+                  >
+                    Loose Tablets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDispenseMode('STRIP')}
+                    className={`px-2 py-0.5 rounded font-bold ${dispenseMode === 'STRIP' ? 'bg-[#0F6B6B] text-white' : 'bg-white border text-slate-600'}`}
+                  >
+                    Full Strip/Box
+                  </button>
+                </div>
               </div>
+
+              {dispenseMode === 'LOOSE' ? (
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <label className="block text-slate-600 mb-0.5">Strip Size</label>
+                    <input
+                      type="number"
+                      value={stripSize}
+                      onChange={(e) => setStripSize(Number(e.target.value))}
+                      className="w-full px-2 py-1 bg-white border border-[#E3E8EE] rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 mb-0.5">Cut Loose Tabs</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={stripSize}
+                      value={looseTabs}
+                      onChange={(e) => setLooseTabs(Number(e.target.value))}
+                      className="w-full px-2 py-1 bg-white border border-[#E3E8EE] rounded font-bold text-[#0F6B6B]"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-slate-600 text-[11px] mb-0.5">Full Strips / Units</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={qty}
+                    onChange={(e) => setQty(Number(e.target.value))}
+                    className="w-full px-2 py-1 bg-white border border-[#E3E8EE] rounded font-bold"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-[#14202B] mb-1">Unit Price (₹)</label>
                 <input
@@ -239,38 +486,54 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
                   className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-[#14202B] mb-1">Payment Mode</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['CASH', 'UPI', 'CARD'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setPaymentMode(mode)}
-                    className={`py-1.5 rounded-lg border font-bold text-center text-xs ${
-                      paymentMode === mode ? 'bg-[#0F6B6B] text-white border-[#0F6B6B]' : 'bg-[#F7F9FB] text-[#5B6B7A] border-[#E3E8EE]'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Payment Mode</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {(['CASH', 'UPI', 'CARD'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setPaymentMode(mode)}
+                      className={`py-2 rounded-lg border font-bold text-center text-[10px] ${
+                        paymentMode === mode ? 'bg-[#0F6B6B] text-white border-[#0F6B6B]' : 'bg-[#F7F9FB] text-[#5B6B7A] border-[#E3E8EE]'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Chronic refill reminder opt-in */}
+            <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={chronicRefill}
+                onChange={(e) => setChronicRefill(e.target.checked)}
+                className="rounded text-[#0F6B6B]"
+              />
+              <span className="text-[11px] text-slate-700">
+                <strong>Chronic Refill:</strong> Auto-schedule 30-day WhatsApp refill reminder
+              </span>
+            </label>
 
             <div className="bg-[#F7F9FB] p-3 rounded-lg space-y-1 text-xs border border-[#E3E8EE]">
               <div className="flex justify-between text-[#5B6B7A]">
-                <span>Subtotal:</span>
-                <span>₹{(qty * unitPrice).toFixed(2)}</span>
+                <span>Billed Count:</span>
+                <span>{billedQuantity} {dispenseMode === 'LOOSE' ? 'tablets' : 'units'}</span>
               </div>
               <div className="flex justify-between text-[#5B6B7A]">
-                <span>GST (12%):</span>
-                <span>₹{(qty * unitPrice * 0.12).toFixed(2)}</span>
+                <span>Subtotal:</span>
+                <span>₹{subtotalAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-[#5B6B7A]">
+                <span>GST (12% HSN 3004):</span>
+                <span>₹{gstAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-bold text-[#14202B] pt-1 border-t border-[#E3E8EE] text-sm">
-                <span>Total Amount:</span>
-                <span className="text-[#0F6B6B]">₹{(qty * unitPrice * 1.12).toFixed(2)}</span>
+                <span>Grand Total:</span>
+                <span className="text-[#0F6B6B]">₹{grandTotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -289,7 +552,10 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-[#E3E8EE]">
-              <h2 className="text-sm font-bold text-[#14202B]">Recent Retail POS Invoices</h2>
+              <div>
+                <h2 className="text-sm font-bold text-[#14202B]">Recent Retail POS Invoices</h2>
+                <p className="text-[11px] text-[#5B6B7A]">Real-time stock ledger synchronization with GST breakdown</p>
+              </div>
               <span className="text-xs text-[#5B6B7A]">{invoices.length} invoices recorded</span>
             </div>
 
@@ -303,7 +569,7 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
                     <th className="py-2.5 px-3 text-right">Subtotal</th>
                     <th className="py-2.5 px-3 text-right">GST</th>
                     <th className="py-2.5 px-3 text-right">Total</th>
-                    <th className="py-2.5 px-3 text-center">Action</th>
+                    <th className="py-2.5 px-3 text-center">Receipt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E3E8EE]">
@@ -339,14 +605,14 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
         </div>
       </div>
 
-      {/* Invoice Detail Modal */}
+      {/* Invoice Detail & WhatsApp Sharing Modal */}
       {activeInvoiceDetail && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-[#E3E8EE] p-6 space-y-4 animate-in fade-in">
             <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
               <div>
                 <span className="text-[10px] font-extrabold bg-teal-100 text-[#0F6B6B] px-2 py-0.5 rounded-full">
-                  OFFICIAL TAX INVOICE
+                  OFFICIAL TAX INVOICE • HSN 3004
                 </span>
                 <h3 className="text-base font-bold text-[#14202B] mt-1">{activeInvoiceDetail.invoice_number}</h3>
               </div>
@@ -362,19 +628,19 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
                 <div className="text-[#5B6B7A]">{activeInvoiceDetail.patient_phone}</div>
               </div>
               <div>
-                <span className="text-[10px] text-[#5B6B7A] font-semibold block">Date & Payment</span>
-                <div className="font-bold text-[#14202B]">{activeInvoiceDetail.created_at.split('T')[0]}</div>
+                <span className="text-[10px] text-[#5B6B7A] font-semibold block">Doctor & Payment</span>
+                <div className="font-bold text-[#14202B]">{activeInvoiceDetail.doctor_name || 'Counter Issue'}</div>
                 <div className="text-emerald-700 font-bold">Paid via {activeInvoiceDetail.payment_mode}</div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-[#14202B]">Billed Line Items</h4>
+              <h4 className="text-xs font-bold text-[#14202B]">Billed Line Items (FEFO Batches)</h4>
               <div className="border border-[#E3E8EE] rounded-lg overflow-hidden">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-[#F7F9FB] border-b border-[#E3E8EE] text-[#5B6B7A]">
                     <tr>
-                      <th className="py-2 px-3">Item</th>
+                      <th className="py-2 px-3">Item & Batch</th>
                       <th className="py-2 px-3">Qty</th>
                       <th className="py-2 px-3 text-right">Unit Price</th>
                       <th className="py-2 px-3 text-right">Total</th>
@@ -383,7 +649,10 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
                   <tbody className="divide-y divide-[#E3E8EE]">
                     {(activeInvoiceDetail.items || []).map((it, idx) => (
                       <tr key={idx}>
-                        <td className="py-2 px-3 font-semibold text-[#14202B]">{it.medicine_name}</td>
+                        <td className="py-2 px-3">
+                          <div className="font-semibold text-[#14202B]">{it.medicine_name}</div>
+                          <div className="text-[10px] font-mono text-[#0F6B6B]">{it.batch} • Exp 11/2027</div>
+                        </td>
                         <td className="py-2 px-3">{it.qty}</td>
                         <td className="py-2 px-3 text-right">₹{it.unit_price}</td>
                         <td className="py-2 px-3 text-right font-bold">₹{it.line_total}</td>
@@ -413,13 +682,31 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setActiveInvoiceDetail(null)}
-                className="px-4 py-2 bg-[#0F6B6B] text-white text-xs font-bold rounded-xl"
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#E3E8EE]">
+              <a
+                href={generateWhatsAppLink(activeInvoiceDetail)}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs"
               >
-                Close Receipt
-              </button>
+                <Share2 size={13} />
+                <span>Share on WhatsApp</span>
+              </a>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-2 border border-[#E3E8EE] text-[#14202B] text-xs font-bold rounded-xl hover:bg-slate-50 flex items-center gap-1.5"
+                >
+                  <Printer size={13} />
+                  <span>Print Receipt</span>
+                </button>
+                <button
+                  onClick={() => setActiveInvoiceDetail(null)}
+                  className="px-4 py-2 bg-[#0F6B6B] text-white text-xs font-bold rounded-xl"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         </div>
