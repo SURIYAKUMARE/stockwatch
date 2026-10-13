@@ -27,10 +27,12 @@ import {
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type { AppScreen } from '../../components/nav/AppShell';
-import type { Appointment, MedicalRecord } from '../../types';
+import type { Appointment, MedicalRecord, MapLocationItem } from '../../types';
+import { LeafletMap } from '../../components/LeafletMap';
 import {
   FALLBACK_APPOINTMENTS,
-  FALLBACK_MEDICAL_RECORDS
+  FALLBACK_MEDICAL_RECORDS,
+  FALLBACK_MAP_LOCATIONS
 } from '../../db/demoFallbackData';
 import {
   savePriceComparisonToCache,
@@ -165,13 +167,36 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   const [newInstructions, setNewInstructions] = useState('Take with water after breakfast');
   const [isOfflinePricing, setIsOfflinePricing] = useState(false);
   const [offlineCachedTime, setOfflineCachedTime] = useState<string | null>(null);
+  const [searchDisplayMode, setSearchDisplayMode] = useState<'LIST' | 'MAP'>('LIST');
+  const [mapLocations, setMapLocations] = useState<MapLocationItem[]>(FALLBACK_MAP_LOCATIONS);
+  const [selectedMapLocId, setSelectedMapLocId] = useState<string>('pharma_valparai_01');
 
-  // Sync activeScreen with activeTab
+  // Sync activeScreen with activeTab & map mode
   useEffect(() => {
     if (activeScreen === 'appointments') setActiveTab('appointments');
     else if (activeScreen === 'medical_records') setActiveTab('records');
-    else if (activeScreen === 'medicine_search' || activeScreen === 'nearby_pharmacies') setActiveTab('search');
+    else if (activeScreen === 'nearby_pharmacies') {
+      setActiveTab('search');
+      setSearchDisplayMode('MAP');
+    }
+    else if (activeScreen === 'medicine_search') {
+      setActiveTab('search');
+    }
   }, [activeScreen]);
+
+  const fetchMapLocations = async () => {
+    try {
+      const res = await fetch('/api/map/locations');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.locations && data.locations.length > 0) {
+          setMapLocations(data.locations);
+        }
+      }
+    } catch {
+      setMapLocations(FALLBACK_MAP_LOCATIONS);
+    }
+  };
 
   const fetchAppointments = async () => {
     setIsLoadingAppointments(true);
@@ -455,6 +480,7 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
     fetchRemindersData();
     fetchAppointments();
     fetchRecords();
+    fetchMapLocations();
   }, []);
 
   return (
@@ -867,14 +893,42 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
       {/* ── SECTION 4: MEDICINE & PRICE FINDER (SEARCH TAB) ── */}
       {activeTab === 'search' && (
         <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+        {/* Search Header with Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#E3E8EE]">
           <div>
             <h2 className="text-sm font-bold text-[#14202B] flex items-center gap-2">
-            <Search className="text-[#0F6B6B]" size={16} />
-            <span>Medicine Availability & Price Comparison (Google Maps Integrated)</span>
-          </h2>
-          <p className="text-xs text-[#5B6B7A] mt-0.5">
-            Compare prices and real-time availability across retail chemists and government PHCs with turn-by-turn directions.
-          </p>
+              <Search className="text-[#0F6B6B]" size={16} />
+              <span>Medicine Availability & Nearby Pharmacies (Interactive Map)</span>
+            </h2>
+            <p className="text-xs text-[#5B6B7A] mt-0.5">
+              Compare prices and real-time stock across government PHCs and licensed retail chemists with live geospatial locator.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[#F7F9FB] p-1 rounded-lg border border-[#E3E8EE] shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setSearchDisplayMode('LIST')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition ${
+                searchDisplayMode === 'LIST'
+                  ? 'bg-[#0F6B6B] text-white shadow-xs'
+                  : 'text-[#5B6B7A] hover:text-[#14202B]'
+              }`}
+            >
+              Store List
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchDisplayMode('MAP')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition flex items-center gap-1.5 ${
+                searchDisplayMode === 'MAP'
+                  ? 'bg-[#0F6B6B] text-white shadow-xs'
+                  : 'text-[#5B6B7A] hover:text-[#14202B]'
+              }`}
+            >
+              <MapPin size={13} />
+              <span>Nearby Map ({mapLocations.length})</span>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar & Quick Pills */}
@@ -917,94 +971,148 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
           ))}
         </div>
 
-        {/* Price & Availability Comparison Table */}
-        {comparisonData && (
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between bg-teal-50/70 p-3 rounded-lg border border-teal-100">
-              <div>
-                <span className="text-xs font-bold text-[#14202B]">{comparisonData.medicine_name}</span>
-                <span className="text-xs text-[#5B6B7A] ml-2">({comparisonData.strength} · {comparisonData.dosage_form})</span>
-              </div>
-              <button
-                onClick={() => fetchMonograph(selectedMedId || 'med_pcm')}
-                className="text-xs text-[#0F6B6B] hover:underline font-bold flex items-center gap-1"
-              >
-                <BookOpen size={13} />
-                <span>Clinical Drug Monograph</span>
-              </button>
-            </div>
-
-            {isOfflinePricing && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2 font-medium">
-                <AlertTriangle size={15} className="text-amber-700 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Cached Offline Pricing (Retrieved {offlineCachedTime || 'earlier'}):</strong> Displaying previously saved pharmacy prices and addresses. Live availability and real-time counter quotes cannot be verified without an internet connection.
+        {/* Content: Either Interactive Map or Comparison Table */}
+        {searchDisplayMode === 'MAP' ? (
+          <div className="space-y-4 pt-2">
+            <LeafletMap
+              locations={mapLocations}
+              selectedLocationId={selectedMapLocId}
+              onSelectLocation={(id) => setSelectedMapLocId(id)}
+              height={420}
+            />
+            {(() => {
+              const sel = mapLocations.find((l) => l.id === selectedMapLocId) || mapLocations[0];
+              if (!sel) return null;
+              return (
+                <div className="bg-[#F7F9FB] border border-[#E3E8EE] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                        sel.category === 'PHARMACY' ? 'bg-purple-100 text-purple-800' : 'bg-teal-100 text-teal-800'
+                      }`}>
+                        {sel.type_label}
+                      </span>
+                      <span className="text-xs font-bold text-[#14202B]">{sel.name}</span>
+                    </div>
+                    <p className="text-xs text-[#5B6B7A] mt-1">📍 {sel.address}</p>
+                    <div className="text-[11px] text-teal-800 font-semibold mt-1">
+                      Total Stock: {sel.total_stock_count?.toLocaleString()} units · {sel.distinct_medicines_count} distinct medicines
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {sel.phone && (
+                      <a
+                        href={`tel:${sel.phone}`}
+                        className="px-3 py-1.5 bg-white border border-[#E3E8EE] rounded-lg text-xs font-bold text-[#14202B] hover:bg-slate-50 flex items-center gap-1.5"
+                      >
+                        <Phone size={13} className="text-[#0F6B6B]" />
+                        <span>Call Store</span>
+                      </a>
+                    )}
+                    <a
+                      href={sel.directions_url || `https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-[#0F6B6B] text-white rounded-lg text-xs font-bold hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Navigation size={13} />
+                      <span>Directions</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <div className="overflow-x-auto border border-[#E3E8EE] rounded-xl">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#F7F9FB] border-b border-[#E3E8EE] text-[#5B6B7A] uppercase text-[10px] tracking-wider font-semibold">
-                  <tr>
-                    <th className="py-2.5 px-4">Facility / Pharmacy</th>
-                    <th className="py-2.5 px-3">Distance</th>
-                    <th className="py-2.5 px-3">Availability</th>
-                    <th className="py-2.5 px-3">Price</th>
-                    <th className="py-2.5 px-3">Verified Source</th>
-                    <th className="py-2.5 px-4 text-right">Directions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E3E8EE]">
-                  {comparisonData.sources.map((s) => (
-                    <tr key={s.facility_id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-[#14202B]">{s.facility_name}</div>
-                        <div className="text-[11px] text-[#5B6B7A]">{s.address}</div>
-                      </td>
-                      <td className="py-3 px-3 tabular-nums font-semibold text-[#14202B]">
-                        {s.distance_km} km
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          s.availability_status === 'IN_STOCK' ? 'bg-emerald-100 text-emerald-800' :
-                          s.availability_status === 'LOW_STOCK' ? 'bg-amber-100 text-amber-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {s.availability_status === 'IN_STOCK' ? `In Stock (${s.quantity_available})` :
-                           s.availability_status === 'LOW_STOCK' ? `Low Stock (${s.quantity_available})` :
-                           'Out of Stock'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-[#0F6B6B]">{s.price_inr}</div>
-                        <div className="text-[10px] text-[#5B6B7A]">{s.pricing_type}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
-                          <ShieldCheck size={13} />
-                          {s.is_verified ? 'Verified Partner' : 'Govt PHC'}
-                        </span>
-                        <span className="text-[10px] text-[#5B6B7A] block">{s.last_updated}</span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <a
-                          href={s.directions_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0F6B6B]/10 hover:bg-[#0F6B6B]/20 text-[#0F6B6B] font-bold text-[11px] transition-colors"
-                        >
-                          <Navigation size={12} />
-                          <span>Google Maps</span>
-                          <ExternalLink size={10} />
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              );
+            })()}
           </div>
+        ) : (
+          comparisonData && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between bg-teal-50/70 p-3 rounded-lg border border-teal-100">
+                <div>
+                  <span className="text-xs font-bold text-[#14202B]">{comparisonData.medicine_name}</span>
+                  <span className="text-xs text-[#5B6B7A] ml-2">({comparisonData.strength} · {comparisonData.dosage_form})</span>
+                </div>
+                <button
+                  onClick={() => fetchMonograph(selectedMedId || 'med_pcm')}
+                  className="text-xs text-[#0F6B6B] hover:underline font-bold flex items-center gap-1"
+                >
+                  <BookOpen size={13} />
+                  <span>Clinical Drug Monograph</span>
+                </button>
+              </div>
+
+              {isOfflinePricing && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2 font-medium">
+                  <AlertTriangle size={15} className="text-amber-700 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Cached Offline Pricing (Retrieved {offlineCachedTime || 'earlier'}):</strong> Displaying previously saved pharmacy prices and addresses. Live availability and real-time counter quotes cannot be verified without an internet connection.
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto border border-[#E3E8EE] rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F7F9FB] border-b border-[#E3E8EE] text-[#5B6B7A] uppercase text-[10px] tracking-wider font-semibold">
+                    <tr>
+                      <th className="py-2.5 px-4">Facility / Pharmacy</th>
+                      <th className="py-2.5 px-3">Distance</th>
+                      <th className="py-2.5 px-3">Availability</th>
+                      <th className="py-2.5 px-3">Price</th>
+                      <th className="py-2.5 px-3">Verified Source</th>
+                      <th className="py-2.5 px-4 text-right">Directions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E3E8EE]">
+                    {comparisonData.sources.map((s) => (
+                      <tr key={s.facility_id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-[#14202B]">{s.facility_name}</div>
+                          <div className="text-[11px] text-[#5B6B7A]">{s.address}</div>
+                        </td>
+                        <td className="py-3 px-3 tabular-nums font-semibold text-[#14202B]">
+                          {s.distance_km} km
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            s.availability_status === 'IN_STOCK' ? 'bg-emerald-100 text-emerald-800' :
+                            s.availability_status === 'LOW_STOCK' ? 'bg-amber-100 text-amber-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {s.availability_status === 'IN_STOCK' ? `In Stock (${s.quantity_available})` :
+                             s.availability_status === 'LOW_STOCK' ? `Low Stock (${s.quantity_available})` :
+                             'Out of Stock'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-[#0F6B6B]">{s.price_inr}</div>
+                          <div className="text-[10px] text-[#5B6B7A]">{s.pricing_type}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
+                            <ShieldCheck size={13} />
+                            {s.is_verified ? 'Verified Partner' : 'Govt PHC'}
+                          </span>
+                          <span className="text-[10px] text-[#5B6B7A] block">{s.last_updated}</span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <a
+                            href={s.directions_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0F6B6B]/10 hover:bg-[#0F6B6B]/20 text-[#0F6B6B] font-bold text-[11px] transition-colors"
+                          >
+                            <Navigation size={12} />
+                            <span>Google Maps</span>
+                            <ExternalLink size={10} />
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
         )}
       </div>
       )}

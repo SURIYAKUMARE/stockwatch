@@ -33,11 +33,11 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
   onNavigateToTransfers,
   preselectedLocationId
 }) => {
-  const [locations, setLocations] = useState<MapLocationItem[]>(FALLBACK_MAP_LOCATIONS);
+  const [rawLocations, setRawLocations] = useState<MapLocationItem[]>(FALLBACK_MAP_LOCATIONS);
   const [selectedLocationId, setSelectedLocationId] = useState<string>(
     preselectedLocationId || 'phc_valparai'
   );
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isUsingFallback, setIsUsingFallback] = useState<boolean>(false);
 
   // Filters
@@ -50,43 +50,19 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
   const fetchMapData = async () => {
     setIsLoading(true);
     try {
-      let url = '/api/map/locations';
-      const params = new URLSearchParams();
-      if (selectedMedicineId) params.append('medicine_id', selectedMedicineId);
-      if (categoryFilter !== 'ALL') params.append('category', categoryFilter.toLowerCase());
-      if (searchQuery) params.append('search', searchQuery);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const res = await fetch(url);
+      const res = await fetch('/api/map/locations');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data.locations && Array.isArray(data.locations)) {
-        setLocations(data.locations);
+      if (data.locations && Array.isArray(data.locations) && data.locations.length > 0) {
+        setRawLocations(data.locations);
         setIsUsingFallback(false);
       } else {
-        throw new Error('Invalid response structure');
+        throw new Error('Empty locations list');
       }
     } catch (e) {
       console.warn('Map locations fetch failed or offline, loading fallback data', e);
       setIsUsingFallback(true);
-      // Filter fallback locally
-      let filtered = [...FALLBACK_MAP_LOCATIONS];
-      if (categoryFilter !== 'ALL') {
-        filtered = filtered.filter((l) => l.category === categoryFilter);
-      }
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (l) =>
-            l.name.toLowerCase().includes(q) ||
-            l.block.toLowerCase().includes(q) ||
-            l.address.toLowerCase().includes(q)
-        );
-      }
-      setLocations(filtered);
+      setRawLocations(FALLBACK_MAP_LOCATIONS);
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +76,39 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
       }
     }, 15000);
     return () => clearInterval(mapPoll);
-  }, [categoryFilter, selectedMedicineId]);
+  }, []);
+
+  // Reactive filtered locations based on user search, category filter, and medicine highlight
+  const locations = useMemo(() => {
+    let result = [...rawLocations];
+
+    // Filter by Category
+    if (categoryFilter !== 'ALL') {
+      result = result.filter((l) => l.category === categoryFilter);
+    }
+
+    // Filter by Search Text
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (l) =>
+          l.name.toLowerCase().includes(q) ||
+          (l.block && l.block.toLowerCase().includes(q)) ||
+          (l.address && l.address.toLowerCase().includes(q))
+      );
+    }
+
+    // Sort by Selected Medicine stock if active
+    if (selectedMedicineId) {
+      result.sort((a, b) => {
+        const qtyA = a.medicines.find((m) => m.medicine_id === selectedMedicineId)?.quantity || 0;
+        const qtyB = b.medicines.find((m) => m.medicine_id === selectedMedicineId)?.quantity || 0;
+        return qtyB - qtyA;
+      });
+    }
+
+    return result;
+  }, [rawLocations, categoryFilter, searchQuery, selectedMedicineId]);
 
   // Overall metrics across the district network
   const metrics = useMemo(() => {
@@ -123,7 +131,16 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
 
   // Currently selected location object
   const selectedLocation = useMemo(() => {
-    return locations.find((l) => l.id === selectedLocationId) || locations[0] || null;
+    const found = locations.find((l) => l.id === selectedLocationId);
+    if (found) return found;
+    return locations[0] || null;
+  }, [locations, selectedLocationId]);
+
+  // Auto-align selected ID when filtering narrows down the list
+  useEffect(() => {
+    if (locations.length > 0 && !locations.some((l) => l.id === selectedLocationId)) {
+      setSelectedLocationId(locations[0].id);
+    }
   }, [locations, selectedLocationId]);
 
   // Medicines inside the selected shop/facility (filtered by inner search)
@@ -254,7 +271,6 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
               placeholder="Search facility name, medical shop, or block..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchMapData()}
               className="w-full pl-9 pr-3 py-2 bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg text-xs text-[#14202B] placeholder-[#8A98A5] focus:outline-none focus:ring-1 focus:ring-[#0F6B6B]"
             />
           </div>
@@ -389,7 +405,7 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
                     {selectedLocation.type_label}
                   </span>
                   <span className="text-[11px] font-semibold text-[#5B6B7A]">
-                    {selectedLocation.block} Block
+                    {selectedLocation.block || selectedLocation.district || 'Coimbatore'} Block
                   </span>
                 </div>
 
@@ -575,4 +591,5 @@ export const NetworkMapScreen: React.FC<NetworkMapScreenProps> = ({
     </div>
   );
 };
+
 export default NetworkMapScreen;
