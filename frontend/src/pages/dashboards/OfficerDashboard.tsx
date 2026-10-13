@@ -31,6 +31,18 @@ import { StateNationalOverview } from './StateNationalOverview';
 import { InventoryManager } from './InventoryManager';
 import { CsvImporter } from './CsvImporter';
 import { NetworkMapScreen } from './NetworkMapScreen';
+import {
+  PosBillingScreen,
+  SuppliersOrdersScreen,
+  ColdChainScreen,
+  AdrScreen,
+  ChcBedsScreen,
+  ChcReferralsScreen,
+  ChcRosterScreen,
+  SurveillanceScreen,
+  DistrictIndentsScreen,
+  NationalReservesScreen
+} from './EnterpriseRoleScreens';
 
 import {
   FALLBACK_CENTRES,
@@ -113,6 +125,13 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
 
   // ─── Pharmacist-specific screens ───────────────────────────────────────────
   if (user?.role === 'pharmacist') {
+    if (activeScreen === 'pos_billing') {
+      const pharmId = user.scopeId ?? 'pharma_valparai_01';
+      return <PosBillingScreen lang={lang} pharmacyId={pharmId} />;
+    }
+    if (activeScreen === 'suppliers_orders') {
+      return <SuppliersOrdersScreen lang={lang} />;
+    }
     if (activeScreen === 'inventory' || activeScreen === 'dashboard') {
       return <PharmacistInventory lang={lang} medicines={medicines} isLoading={isLoading} />;
     }
@@ -276,6 +295,50 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
 
     case 'user_management':
       return <UserMgmtStub lang={lang} />;
+
+    case 'pos_billing': {
+      const pharmId = user?.scopeId ?? 'pharma_valparai_01';
+      return <PosBillingScreen lang={lang} pharmacyId={pharmId} />;
+    }
+
+    case 'suppliers_orders':
+      return <SuppliersOrdersScreen lang={lang} />;
+
+    case 'cold_chain': {
+      const facilityId = user?.scopeId ?? selectedCentreId;
+      return <ColdChainScreen lang={lang} facilityId={facilityId} />;
+    }
+
+    case 'adr_reporting': {
+      const facilityId = user?.scopeId ?? selectedCentreId;
+      return <AdrScreen lang={lang} facilityId={facilityId} />;
+    }
+
+    case 'chc_beds': {
+      const facilityId = user?.scopeId ?? 'chc_pollachi';
+      return <ChcBedsScreen lang={lang} facilityId={facilityId} />;
+    }
+
+    case 'chc_referrals': {
+      const facilityId = user?.scopeId ?? 'chc_pollachi';
+      return <ChcReferralsScreen lang={lang} facilityId={facilityId} />;
+    }
+
+    case 'chc_roster': {
+      const facilityId = user?.scopeId ?? 'chc_pollachi';
+      return <ChcRosterScreen lang={lang} facilityId={facilityId} />;
+    }
+
+    case 'surveillance':
+      return <SurveillanceScreen lang={lang} districtId="coimbatore" />;
+
+    case 'district_indents':
+      return <DistrictIndentsScreen lang={lang} districtId="coimbatore" />;
+
+    case 'strategic_reserves':
+    case 'national_procurement':
+    case 'pharmacovigilance_hub':
+      return <NationalReservesScreen lang={lang} />;
 
     default:
       return (

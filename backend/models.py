@@ -383,3 +383,155 @@ class OfflineSyncAction(SQLModel, table=True):
     result_data_json: str = "{}"
     created_at: datetime = Field(default_factory=get_utc_now)
 
+# ================= PATIENT APPOINTMENTS & DIGITAL HEALTH RECORDS =================
+class Appointment(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    patient_id: str = Field(index=True)
+    patient_name: str = "Anonymous Citizen"
+    patient_phone: str = ""
+    facility_id: str = Field(foreign_key="facility.id")
+    department: str = "General OPD" # General OPD, Pediatrics, Maternal Health, NCD Clinic, Dental, AYUSH
+    doctor_name: Optional[str] = "Medical Officer"
+    appointment_date: str # YYYY-MM-DD
+    appointment_time: str = "09:30 AM"
+    symptoms: str = ""
+    status: str = "CONFIRMED" # CONFIRMED, COMPLETED, CANCELLED, IN_CONSULTATION
+    token_number: str = "OPD-101"
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+class MedicalRecord(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    patient_id: str = Field(index=True)
+    facility_id: Optional[str] = None
+    record_type: str = "PRESCRIPTION" # PRESCRIPTION, LAB_REPORT, DISCHARGE_SUMMARY, VACCINATION
+    title: str
+    doctor_name: Optional[str] = "Medical Officer"
+    record_date: str # YYYY-MM-DD
+    diagnosis: Optional[str] = ""
+    medicines_prescribed_json: str = "[]" # JSON list of {medicine_name, dosage, duration, instructions}
+    lab_results_json: str = "{}" # JSON dict of test results
+    notes: Optional[str] = ""
+    file_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= RETAIL PHARMACY POS BILLING & INVOICES =================
+class RetailInvoice(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    invoice_number: str = Field(index=True, unique=True)
+    pharmacy_id: str = Field(index=True)
+    patient_name: str
+    patient_phone: str = ""
+    doctor_name: Optional[str] = None
+    items_json: str = "[]" # JSON list of {medicine_id, medicine_name, batch, qty, unit_price, gst_rate, total}
+    subtotal: float = 0.0
+    cgst: float = 0.0
+    sgst: float = 0.0
+    total_amount: float = 0.0
+    payment_mode: str = "CASH" # CASH, UPI, CARD
+    created_by: str = "Retail Pharmacist"
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= PHC COLD CHAIN & PHARMACOVIGILANCE =================
+class ColdChainLog(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    facility_id: str = Field(index=True)
+    equipment_id: str # e.g. "ILR-01", "DF-01"
+    equipment_type: str = "ILR" # ILR, DF, VACCINE_CARRIER
+    temperature_celsius: float
+    target_min: float = 2.0
+    target_max: float = 8.0
+    is_excursion: bool = False
+    excursion_severity: str = "NORMAL" # NORMAL, WARNING, CRITICAL
+    logged_by: str = "Pharmacist"
+    power_source: str = "MAINS" # MAINS, SOLAR, GENERATOR, BATTERY
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+class ADRReport(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    report_reference: str = Field(index=True, unique=True)
+    facility_id: str = Field(index=True)
+    patient_age: int
+    patient_gender: str
+    medicine_id: str
+    batch_number: str = "UNKNOWN"
+    reaction_description: str
+    onset_date: str # YYYY-MM-DD
+    severity: str = "MODERATE" # MILD, MODERATE, SEVERE, LIFE_THREATENING
+    outcome: str = "RECOVERED" # RECOVERED, RECOVERING, NOT_RECOVERED, FATAL, UNKNOWN
+    action_taken: str = "DRUG_WITHDRAWN" # DRUG_WITHDRAWN, DOSE_REDUCED, NO_CHANGE
+    reported_by: str = "Pharmacist"
+    reported_by_role: str = "pharmacist"
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= CHC CLINICAL OPERATIONS (REFERRALS, BEDS, ROSTER) =================
+class Referral(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    referral_code: str = Field(index=True, unique=True)
+    patient_name: str
+    patient_age: int
+    patient_gender: str
+    from_facility_id: str
+    to_facility_id: str
+    referral_reason: str
+    urgency: str = "ROUTINE" # ROUTINE, PRIORITY, EMERGENCY
+    clinical_notes: Optional[str] = None
+    status: str = "REFERRED" # REFERRED, ACCEPTED, IN_TRANSIT, ADMITTED, DISCHARGED, CANCELLED
+    referring_doctor: str = "Medical Officer"
+    created_at: datetime = Field(default_factory=get_utc_now)
+    updated_at: datetime = Field(default_factory=get_utc_now)
+
+class BedOccupancy(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    facility_id: str = Field(index=True)
+    ward_name: str # General Male, General Female, Maternity, Pediatric, ICU / Emergency
+    total_beds: int
+    occupied_beds: int
+    oxygen_supported_beds: int = 0
+    ventilator_beds: int = 0
+    last_updated_by: str = "Nursing Incharge"
+    updated_at: datetime = Field(default_factory=get_utc_now)
+
+class DutyRoster(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    facility_id: str = Field(index=True)
+    staff_name: str
+    role_title: str # Medical Officer, Staff Nurse, Pharmacist, Lab Technician, ANM
+    shift: str # Morning (08:00 - 14:00), Evening (14:00 - 20:00), Night (20:00 - 08:00), General (09:00 - 17:00)
+    roster_date: str # YYYY-MM-DD
+    status: str = "ON_DUTY" # ON_DUTY, SCHEDULED, ON_LEAVE, ON_CALL
+    contact_number: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+# ================= PUBLIC HEALTH SURVEILLANCE & STRATEGIC BUFFER =================
+class DiseaseSurveillance(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    surveillance_code: str = Field(index=True, unique=True)
+    district_id: str = Field(index=True)
+    facility_id: Optional[str] = None
+    disease_name: str # Dengue, Acute Diarrheal Disease (ADD), Viral Hepatitis, Typhoid, Malaria, ILI
+    reported_cases: int = 0
+    suspected_cases: int = 0
+    confirmed_cases: int = 0
+    reporting_week: str # e.g. "2026-W41"
+    reporting_date: str # YYYY-MM-DD
+    alert_level: str = "NORMAL" # NORMAL, WATCH, OUTBREAK_WARNING, EPIDEMIC_SURGE
+    affected_villages: Optional[str] = None
+    action_taken: Optional[str] = None
+    reported_by: str = "District Epidemiologist"
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+class StrategicReserve(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    depot_name: str # e.g. "Central Medical Store Depot - Chennai"
+    depot_code: str # CMSD-CHN
+    state_id: str
+    medicine_id: str
+    buffer_quantity: int
+    reserved_quantity: int = 0
+    minimum_threshold: int = 10000
+    depot_manager: str = "Chief Medical Storekeeper"
+    last_inspected: str = "2026-10-10"
+    created_at: datetime = Field(default_factory=get_utc_now)
+
+

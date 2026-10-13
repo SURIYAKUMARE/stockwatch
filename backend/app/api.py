@@ -1,5 +1,6 @@
 import time
 import json
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 from typing import Optional, List, Dict, Any
@@ -3216,6 +3217,1105 @@ def resolve_offline_conflict(
     )
 
     return {"status": "resolved", "action_id": action.id, "resolution": req.resolution_choice}
+
+
+# =========================================================================
+# ----------------- ENTERPRISE ROLE-BASED MODULES -------------------------
+# =========================================================================
+
+# ----------------- PATIENT APPOINTMENTS -----------------
+class AppointmentCreateRequest(BaseModel):
+    facility_id: str
+    department: str = "General OPD"
+    doctor_name: Optional[str] = "Medical Officer"
+    appointment_date: str # YYYY-MM-DD
+    appointment_time: str = "09:30 AM"
+    symptoms: str = ""
+    patient_name: Optional[str] = "Citizen"
+    patient_phone: Optional[str] = ""
+
+@router.get("/patient/appointments")
+def get_patient_appointments(
+    patient_id: Optional[str] = Query(None),
+    facility_id: Optional[str] = Query(None),
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    pid = patient_id or (current_user.id if current_user else "user_patient_01")
+    stmt = select(models.Appointment)
+    if facility_id:
+        stmt = stmt.where(models.Appointment.facility_id == facility_id)
+    else:
+        stmt = stmt.where(models.Appointment.patient_id == pid)
+    results = session.exec(stmt.order_by(models.Appointment.created_at.desc())).all()
+    
+    # If empty, provide standard initial seeded appointments
+    if not results and pid == "user_patient_01":
+        today_str = date.today().isoformat()
+        tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
+        sample1 = models.Appointment(
+            patient_id=pid,
+            patient_name=current_user.name if current_user else "Kavitha Murugan",
+            patient_phone="+91 98421 12345",
+            facility_id="phc_valparai",
+            department="General OPD",
+            doctor_name="Dr. S. Kulanthaivel, MBBS",
+            appointment_date=today_str,
+            appointment_time="10:30 AM",
+            symptoms="Seasonal fever, headache, body ache",
+            status="CONFIRMED",
+            token_number="OPD-104"
+        )
+        sample2 = models.Appointment(
+            patient_id=pid,
+            patient_name=current_user.name if current_user else "Kavitha Murugan",
+            patient_phone="+91 98421 12345",
+            facility_id="chc_pollachi",
+            department="Maternal Health",
+            doctor_name="Dr. R. Anuradha, DGO",
+            appointment_date=tomorrow_str,
+            appointment_time="11:15 AM",
+            symptoms="Routine prenatal checkup and iron supplementation review",
+            status="CONFIRMED",
+            token_number="MCH-028"
+        )
+        session.add(sample1)
+        session.add(sample2)
+        session.commit()
+        session.refresh(sample1)
+        session.refresh(sample2)
+        results = [sample1, sample2]
+        
+    return results
+
+@router.post("/patient/appointments")
+def create_patient_appointment(
+    req: AppointmentCreateRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    pid = current_user.id if current_user else "user_patient_01"
+    pname = req.patient_name or (current_user.name if current_user else "Citizen")
+    pphone = req.patient_phone or "+91 98421 00000"
+    
+    token = f"OPD-{int(time.time()) % 1000:03d}"
+    apt = models.Appointment(
+        patient_id=pid,
+        patient_name=pname,
+        patient_phone=pphone,
+        facility_id=req.facility_id,
+        department=req.department,
+        doctor_name=req.doctor_name or "Medical Officer",
+        appointment_date=req.appointment_date,
+        appointment_time=req.appointment_time,
+        symptoms=req.symptoms,
+        status="CONFIRMED",
+        token_number=token
+    )
+    session.add(apt)
+    session.commit()
+    session.refresh(apt)
+    return apt
+
+@router.post("/patient/appointments/{appointment_id}/cancel")
+def cancel_patient_appointment(
+    appointment_id: str,
+    session: Session = Depends(get_session)
+):
+    apt = session.get(models.Appointment, appointment_id)
+    if not apt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    apt.status = "CANCELLED"
+    session.add(apt)
+    session.commit()
+    session.refresh(apt)
+    return apt
+
+
+# ----------------- PATIENT MEDICAL RECORDS -----------------
+class MedicalRecordCreateRequest(BaseModel):
+    facility_id: Optional[str] = None
+    record_type: str = "PRESCRIPTION"
+    title: str
+    doctor_name: Optional[str] = "Medical Officer"
+    record_date: str # YYYY-MM-DD
+    diagnosis: Optional[str] = ""
+    medicines_prescribed: List[Dict[str, Any]] = []
+    lab_results: Dict[str, Any] = {}
+    notes: Optional[str] = ""
+
+@router.get("/patient/records")
+def get_patient_records(
+    patient_id: Optional[str] = Query(None),
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    pid = patient_id or (current_user.id if current_user else "user_patient_01")
+    records = session.exec(
+        select(models.MedicalRecord)
+        .where(models.MedicalRecord.patient_id == pid)
+        .order_by(models.MedicalRecord.record_date.desc())
+    ).all()
+    
+    if not records and pid == "user_patient_01":
+        today_str = date.today().isoformat()
+        r1 = models.MedicalRecord(
+            patient_id=pid,
+            facility_id="phc_valparai",
+            record_type="PRESCRIPTION",
+            title="OPD Clinical Consultation & Prescription",
+            doctor_name="Dr. S. Kulanthaivel, MBBS",
+            record_date=today_str,
+            diagnosis="Acute Viral Pyrexia with upper respiratory symptoms",
+            medicines_prescribed_json=json.dumps([
+                {"name": "Paracetamol 500mg", "dosage": "1 tablet TDS", "duration": "5 days", "instructions": "After food"},
+                {"name": "Cetirizine 10mg", "dosage": "1 tablet OD", "duration": "3 days", "instructions": "At bedtime"},
+                {"name": "ORS Sachet", "dosage": "1 packet in 1L water", "duration": "2 days", "instructions": "Sip frequently"}
+            ]),
+            notes="Patient advised adequate hydration and rest. Review if fever persists past 3 days."
+        )
+        r2 = models.MedicalRecord(
+            patient_id=pid,
+            facility_id="phc_valparai",
+            record_type="LAB_REPORT",
+            title="Complete Blood Count (CBC) & Dengue NS1 Rapid Test",
+            doctor_name="Dr. P. Meena, Pathologist",
+            record_date=today_str,
+            diagnosis="Normal hematological profile; Dengue NS1 Negative",
+            lab_results_json=json.dumps({
+                "Hemoglobin": "13.8 g/dL (Normal 12.0 - 15.5)",
+                "Total WBC Count": "6,800 /cu.mm (Normal 4,000 - 11,000)",
+                "Platelet Count": "2.4 Lakhs /cu.mm (Normal 1.5 - 4.5)",
+                "Dengue NS1 Antigen": "NEGATIVE",
+                "Malaria Rapid Diagnostic Test": "NEGATIVE"
+            }),
+            notes="No evidence of acute thrombocytopenia or malarial parasites."
+        )
+        session.add(r1)
+        session.add(r2)
+        session.commit()
+        session.refresh(r1)
+        session.refresh(r2)
+        records = [r1, r2]
+        
+    # Parse JSON fields for convenience
+    output = []
+    for r in records:
+        r_dict = r.model_dump()
+        try:
+            r_dict["medicines_prescribed"] = json.loads(r.medicines_prescribed_json)
+        except Exception:
+            r_dict["medicines_prescribed"] = []
+        try:
+            r_dict["lab_results"] = json.loads(r.lab_results_json)
+        except Exception:
+            r_dict["lab_results"] = {}
+        output.append(r_dict)
+    return output
+
+@router.post("/patient/records")
+def create_patient_record(
+    req: MedicalRecordCreateRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    pid = current_user.id if current_user else "user_patient_01"
+    rec = models.MedicalRecord(
+        patient_id=pid,
+        facility_id=req.facility_id,
+        record_type=req.record_type,
+        title=req.title,
+        doctor_name=req.doctor_name,
+        record_date=req.record_date,
+        diagnosis=req.diagnosis,
+        medicines_prescribed_json=json.dumps(req.medicines_prescribed),
+        lab_results_json=json.dumps(req.lab_results),
+        notes=req.notes
+    )
+    session.add(rec)
+    session.commit()
+    session.refresh(rec)
+    return rec
+
+
+# ----------------- RETAIL PHARMACY POS BILLING & INVOICES -----------------
+class RetailInvoiceItem(BaseModel):
+    medicine_id: str
+    medicine_name: str
+    batch: str = "BTH-POS"
+    qty: int
+    unit_price: float
+    gst_rate: float = 12.0
+
+class RetailInvoiceCreateRequest(BaseModel):
+    pharmacy_id: str
+    patient_name: str
+    patient_phone: Optional[str] = ""
+    doctor_name: Optional[str] = None
+    items: List[RetailInvoiceItem]
+    payment_mode: str = "CASH"
+
+@router.post("/pharmacy/billing")
+def create_retail_invoice(
+    req: RetailInvoiceCreateRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    subtotal = 0.0
+    cgst = 0.0
+    sgst = 0.0
+    
+    items_data = []
+    for item in req.items:
+        line_sub = round(item.qty * item.unit_price, 2)
+        line_gst = round(line_sub * (item.gst_rate / 100.0), 2)
+        line_total = round(line_sub + line_gst, 2)
+        subtotal += line_sub
+        cgst += round(line_gst / 2.0, 2)
+        sgst += round(line_gst / 2.0, 2)
+        
+        items_data.append({
+            "medicine_id": item.medicine_id,
+            "medicine_name": item.medicine_name,
+            "batch": item.batch,
+            "qty": item.qty,
+            "unit_price": item.unit_price,
+            "gst_rate": item.gst_rate,
+            "line_total": line_total
+        })
+        
+        # Deduct from InventoryBalance if exists
+        bal = session.exec(
+            select(models.InventoryBalance)
+            .where(
+                models.InventoryBalance.owner_id == req.pharmacy_id,
+                models.InventoryBalance.medicine_id == item.medicine_id
+            )
+        ).first()
+        if bal:
+            bal.quantity_on_hand = max(0, bal.quantity_on_hand - item.qty)
+            bal.last_verified_at = get_utc_now()
+            session.add(bal)
+            
+        # Log InventoryTransaction
+        tx = models.InventoryTransaction(
+            transaction_reference=f"TX-POS-{uuid.uuid4().hex[:8].upper()}",
+            owner_type="pharmacy",
+            owner_id=req.pharmacy_id,
+            medicine_id=item.medicine_id,
+            transaction_type="dispense",
+            quantity=item.qty,
+            source="POS_BILLING",
+            created_by=current_user.username if current_user else "Retail Pharmacist",
+            reason=f"Retail Sale to {req.patient_name}"
+        )
+        session.add(tx)
+
+    total_amount = round(subtotal + cgst + sgst, 2)
+    inv_num = f"INV-2026-{int(time.time() * 1000) % 1000000:06d}"
+    
+    invoice = models.RetailInvoice(
+        invoice_number=inv_num,
+        pharmacy_id=req.pharmacy_id,
+        patient_name=req.patient_name,
+        patient_phone=req.patient_phone or "",
+        doctor_name=req.doctor_name,
+        items_json=json.dumps(items_data),
+        subtotal=subtotal,
+        cgst=cgst,
+        sgst=sgst,
+        total_amount=total_amount,
+        payment_mode=req.payment_mode,
+        created_by=current_user.username if current_user else "Retail Pharmacist"
+    )
+    session.add(invoice)
+    session.commit()
+    session.refresh(invoice)
+    
+    res_dict = invoice.model_dump()
+    res_dict["items"] = items_data
+    return res_dict
+
+@router.get("/pharmacy/invoices")
+def get_retail_invoices(
+    pharmacy_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    stmt = select(models.RetailInvoice)
+    if pharmacy_id:
+        stmt = stmt.where(models.RetailInvoice.pharmacy_id == pharmacy_id)
+    invoices = session.exec(stmt.order_by(models.RetailInvoice.created_at.desc()).limit(50)).all()
+    
+    # If empty, seed realistic recent POS sales
+    if not invoices:
+        pid = pharmacy_id or "pharma_valparai_01"
+        sample_inv1 = models.RetailInvoice(
+            invoice_number="INV-2026-089101",
+            pharmacy_id=pid,
+            patient_name="S. Natarajan",
+            patient_phone="+91 94432 55678",
+            doctor_name="Dr. Sundaram, MD",
+            items_json=json.dumps([
+                {"medicine_id": "med_pcm", "medicine_name": "Paracetamol 500mg Tab", "batch": "BTH-PCM-2026", "qty": 20, "unit_price": 1.5, "gst_rate": 12.0, "line_total": 33.6},
+                {"medicine_id": "med_amox", "medicine_name": "Amoxicillin 500mg Cap", "batch": "BTH-AMX-2026", "qty": 10, "unit_price": 7.0, "gst_rate": 12.0, "line_total": 78.4}
+            ]),
+            subtotal=100.0,
+            cgst=6.0,
+            sgst=6.0,
+            total_amount=112.0,
+            payment_mode="UPI",
+            created_by="Retail Pharmacist"
+        )
+        session.add(sample_inv1)
+        session.commit()
+        session.refresh(sample_inv1)
+        invoices = [sample_inv1]
+        
+    out = []
+    for inv in invoices:
+        d = inv.model_dump()
+        try:
+            d["items"] = json.loads(inv.items_json)
+        except Exception:
+            d["items"] = []
+        out.append(d)
+    return out
+
+
+# ----------------- PHC COLD CHAIN MONITORING -----------------
+class ColdChainLogRequest(BaseModel):
+    facility_id: str
+    equipment_id: str = "ILR-01"
+    equipment_type: str = "ILR"
+    temperature_celsius: float
+    power_source: str = "MAINS"
+    notes: Optional[str] = None
+
+@router.get("/facility/cold-chain")
+def get_cold_chain_logs(
+    facility_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    stmt = select(models.ColdChainLog)
+    if facility_id:
+        stmt = stmt.where(models.ColdChainLog.facility_id == facility_id)
+    logs = session.exec(stmt.order_by(models.ColdChainLog.created_at.desc()).limit(100)).all()
+    
+    if not logs:
+        fid = facility_id or "phc_valparai"
+        now = datetime.now(timezone.utc)
+        sample_logs = [
+            models.ColdChainLog(
+                facility_id=fid, equipment_id="ILR-01", equipment_type="ILR",
+                temperature_celsius=4.2, target_min=2.0, target_max=8.0,
+                is_excursion=False, excursion_severity="NORMAL",
+                logged_by="R. Karpagam, D.Pharm", power_source="MAINS",
+                notes="Morning temperature verification. Green zone optimal.",
+                created_at=now - timedelta(hours=2)
+            ),
+            models.ColdChainLog(
+                facility_id=fid, equipment_id="ILR-01", equipment_type="ILR",
+                temperature_celsius=5.1, target_min=2.0, target_max=8.0,
+                is_excursion=False, excursion_severity="NORMAL",
+                logged_by="R. Karpagam, D.Pharm", power_source="MAINS",
+                notes="Afternoon logging. Compressor functioning normally.",
+                created_at=now - timedelta(hours=8)
+            ),
+            models.ColdChainLog(
+                facility_id=fid, equipment_id="DF-01", equipment_type="DF",
+                temperature_celsius=-18.5, target_min=-25.0, target_max=-15.0,
+                is_excursion=False, excursion_severity="NORMAL",
+                logged_by="R. Karpagam, D.Pharm", power_source="MAINS",
+                notes="Deep Freezer holding ice packs and OPV vials.",
+                created_at=now - timedelta(hours=8)
+            )
+        ]
+        for l in sample_logs:
+            session.add(l)
+        session.commit()
+        for l in sample_logs:
+            session.refresh(l)
+        logs = sample_logs
+    return logs
+
+@router.post("/facility/cold-chain")
+def create_cold_chain_log(
+    req: ColdChainLogRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    is_excursion = (req.temperature_celsius < 2.0 or req.temperature_celsius > 8.0)
+    severity = "NORMAL"
+    if is_excursion:
+        severity = "CRITICAL" if (req.temperature_celsius < 0.0 or req.temperature_celsius > 12.0) else "WARNING"
+        
+    log = models.ColdChainLog(
+        facility_id=req.facility_id,
+        equipment_id=req.equipment_id,
+        equipment_type=req.equipment_type,
+        temperature_celsius=req.temperature_celsius,
+        target_min=2.0,
+        target_max=8.0,
+        is_excursion=is_excursion,
+        excursion_severity=severity,
+        logged_by=current_user.name if current_user else "PHC Pharmacist",
+        power_source=req.power_source,
+        notes=req.notes
+    )
+    session.add(log)
+    
+    if is_excursion:
+        notif = models.Notification(
+            target_role="facility",
+            target_scope=req.facility_id,
+            title=f"Cold Chain Excursion Alert: {req.equipment_id} ({req.temperature_celsius}°C)",
+            message=f"Equipment {req.equipment_id} recorded {req.temperature_celsius}°C (Allowed: 2°C - 8°C). Inspect power supply and ice-lining immediately.",
+            category="STOCK_ALERT",
+            priority="CRITICAL" if severity == "CRITICAL" else "WARNING"
+        )
+        session.add(notif)
+        
+    session.commit()
+    session.refresh(log)
+    return log
+
+
+# ----------------- ADVERSE DRUG REACTION (ADR) REPORTING -----------------
+class ADRReportRequest(BaseModel):
+    facility_id: str
+    patient_age: int
+    patient_gender: str
+    medicine_id: str
+    batch_number: str = "UNKNOWN"
+    reaction_description: str
+    onset_date: str
+    severity: str = "MODERATE"
+    outcome: str = "RECOVERED"
+    action_taken: str = "DRUG_WITHDRAWN"
+
+@router.get("/facility/adr")
+def get_adr_reports(
+    facility_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    stmt = select(models.ADRReport)
+    if facility_id:
+        stmt = stmt.where(models.ADRReport.facility_id == facility_id)
+    reports = session.exec(stmt.order_by(models.ADRReport.created_at.desc())).all()
+    
+    if not reports:
+        today_str = date.today().isoformat()
+        sample = models.ADRReport(
+            report_reference="ADR-2026-004128",
+            facility_id="phc_valparai",
+            patient_age=42,
+            patient_gender="Female",
+            medicine_id="med_amox",
+            batch_number="BTH-AMX-2026",
+            reaction_description="Erythematous rash with pruritus 2 hours after oral dose.",
+            onset_date=today_str,
+            severity="MODERATE",
+            outcome="RECOVERED",
+            action_taken="DRUG_WITHDRAWN",
+            reported_by="R. Karpagam, D.Pharm",
+            reported_by_role="pharmacist"
+        )
+        session.add(sample)
+        session.commit()
+        session.refresh(sample)
+        reports = [sample]
+    return reports
+
+@router.post("/facility/adr")
+def create_adr_report(
+    req: ADRReportRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    ref = f"ADR-2026-{uuid.uuid4().hex[:6].upper()}"
+    report = models.ADRReport(
+        report_reference=ref,
+        facility_id=req.facility_id,
+        patient_age=req.patient_age,
+        patient_gender=req.patient_gender,
+        medicine_id=req.medicine_id,
+        batch_number=req.batch_number,
+        reaction_description=req.reaction_description,
+        onset_date=req.onset_date,
+        severity=req.severity,
+        outcome=req.outcome,
+        action_taken=req.action_taken,
+        reported_by=current_user.name if current_user else "PHC Pharmacist",
+        reported_by_role=current_user.role if current_user else "pharmacist"
+    )
+    session.add(report)
+    
+    # Broadcast notification to district pharmacovigilance
+    notif = models.Notification(
+        target_role="district_officer",
+        title=f"New ADR Report: {report.medicine_id} ({report.severity})",
+        message=f"Facility {report.facility_id} reported {report.severity} reaction: {report.reaction_description}",
+        category="SYSTEM",
+        priority="WARNING" if report.severity in ("SEVERE", "LIFE_THREATENING") else "INFO"
+    )
+    session.add(notif)
+    session.commit()
+    session.refresh(report)
+    return report
+
+
+# ----------------- CHC CLINICAL OPERATIONS (REFERRALS, BEDS, ROSTER) -----------------
+class ReferralCreateRequest(BaseModel):
+    patient_name: str
+    patient_age: int
+    patient_gender: str
+    from_facility_id: str
+    to_facility_id: str
+    referral_reason: str
+    urgency: str = "ROUTINE"
+    clinical_notes: Optional[str] = None
+    referring_doctor: Optional[str] = "Medical Officer"
+
+class ReferralStatusUpdateRequest(BaseModel):
+    status: str
+    notes: Optional[str] = None
+
+@router.get("/chc/referrals")
+def get_chc_referrals(
+    facility_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    stmt = select(models.Referral)
+    if facility_id:
+        stmt = stmt.where(
+            (models.Referral.from_facility_id == facility_id) |
+            (models.Referral.to_facility_id == facility_id)
+        )
+    refs = session.exec(stmt.order_by(models.Referral.created_at.desc())).all()
+    
+    if not refs:
+        now = datetime.now(timezone.utc)
+        sample1 = models.Referral(
+            referral_code="REF-CHC-10492",
+            patient_name="Marimuthu K.",
+            patient_age=58,
+            patient_gender="Male",
+            from_facility_id="phc_valparai",
+            to_facility_id="chc_pollachi",
+            referral_reason="Suspected acute coronary syndrome; elevated troponin and ST elevation",
+            urgency="EMERGENCY",
+            clinical_notes="Stabilized with Aspirin 300mg, Clopidogrel 300mg, Sorbitrate 5mg sublingual. Shifted via 108 Ambulance.",
+            status="IN_TRANSIT",
+            referring_doctor="Dr. S. Kulanthaivel, MBBS",
+            created_at=now - timedelta(hours=1)
+        )
+        sample2 = models.Referral(
+            referral_code="REF-CHC-10488",
+            patient_name="Revathi P.",
+            patient_age=26,
+            patient_gender="Female",
+            from_facility_id="phc_aliyar",
+            to_facility_id="chc_pollachi",
+            referral_reason="Primigravida 38 weeks with mild gestational hypertension",
+            urgency="PRIORITY",
+            clinical_notes="BP 146/94 mmHg, urine albumin 1+. Fetal heart sound regular.",
+            status="ADMITTED",
+            referring_doctor="Dr. K. Geetha, MBBS",
+            created_at=now - timedelta(hours=5)
+        )
+        session.add(sample1)
+        session.add(sample2)
+        session.commit()
+        session.refresh(sample1)
+        session.refresh(sample2)
+        refs = [sample1, sample2]
+    return refs
+
+@router.post("/chc/referrals")
+def create_chc_referral(
+    req: ReferralCreateRequest,
+    session: Session = Depends(get_session)
+):
+    code = f"REF-CHC-{uuid.uuid4().hex[:5].upper()}"
+    ref = models.Referral(
+        referral_code=code,
+        patient_name=req.patient_name,
+        patient_age=req.patient_age,
+        patient_gender=req.patient_gender,
+        from_facility_id=req.from_facility_id,
+        to_facility_id=req.to_facility_id,
+        referral_reason=req.referral_reason,
+        urgency=req.urgency,
+        clinical_notes=req.clinical_notes,
+        status="REFERRED",
+        referring_doctor=req.referring_doctor or "Medical Officer"
+    )
+    session.add(ref)
+    session.commit()
+    session.refresh(ref)
+    return ref
+
+@router.post("/chc/referrals/{referral_id}/status")
+def update_chc_referral_status(
+    referral_id: str,
+    req: ReferralStatusUpdateRequest,
+    session: Session = Depends(get_session)
+):
+    ref = session.get(models.Referral, referral_id)
+    if not ref:
+        raise HTTPException(status_code=404, detail="Referral record not found")
+    ref.status = req.status
+    ref.updated_at = get_utc_now()
+    if req.notes:
+        ref.clinical_notes = (ref.clinical_notes or "") + f"\n[Update {req.status}]: {req.notes}"
+    session.add(ref)
+    session.commit()
+    session.refresh(ref)
+    return ref
+
+# ----------------- CHC BED OCCUPANCY -----------------
+class BedOccupancyUpdateRequest(BaseModel):
+    facility_id: str
+    ward_name: str
+    total_beds: int
+    occupied_beds: int
+    oxygen_supported_beds: int = 0
+    ventilator_beds: int = 0
+
+@router.get("/chc/beds")
+def get_chc_beds(
+    facility_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    fid = facility_id or "chc_pollachi"
+    beds = session.exec(
+        select(models.BedOccupancy)
+        .where(models.BedOccupancy.facility_id == fid)
+    ).all()
+    
+    if not beds:
+        default_wards = [
+            models.BedOccupancy(facility_id=fid, ward_name="General Male Ward", total_beds=20, occupied_beds=15, oxygen_supported_beds=8, ventilator_beds=0, last_updated_by="Sister Incharge"),
+            models.BedOccupancy(facility_id=fid, ward_name="General Female Ward", total_beds=20, occupied_beds=18, oxygen_supported_beds=10, ventilator_beds=0, last_updated_by="Sister Incharge"),
+            models.BedOccupancy(facility_id=fid, ward_name="Maternity & Labour Ward", total_beds=15, occupied_beds=12, oxygen_supported_beds=6, ventilator_beds=0, last_updated_by="Midwife Incharge"),
+            models.BedOccupancy(facility_id=fid, ward_name="Pediatric Ward", total_beds=10, occupied_beds=6, oxygen_supported_beds=4, ventilator_beds=0, last_updated_by="Sister Incharge"),
+            models.BedOccupancy(facility_id=fid, ward_name="Emergency & ICU Stabilisation", total_beds=6, occupied_beds=4, oxygen_supported_beds=6, ventilator_beds=2, last_updated_by="Casualty MO")
+        ]
+        for w in default_wards:
+            session.add(w)
+        session.commit()
+        for w in default_wards:
+            session.refresh(w)
+        beds = default_wards
+    return beds
+
+@router.post("/chc/beds/update")
+def update_chc_beds(
+    req: BedOccupancyUpdateRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    bed = session.exec(
+        select(models.BedOccupancy)
+        .where(
+            models.BedOccupancy.facility_id == req.facility_id,
+            models.BedOccupancy.ward_name == req.ward_name
+        )
+    ).first()
+    
+    user_name = current_user.name if current_user else "Nursing Incharge"
+    if not bed:
+        bed = models.BedOccupancy(
+            facility_id=req.facility_id,
+            ward_name=req.ward_name,
+            total_beds=req.total_beds,
+            occupied_beds=req.occupied_beds,
+            oxygen_supported_beds=req.oxygen_supported_beds,
+            ventilator_beds=req.ventilator_beds,
+            last_updated_by=user_name
+        )
+    else:
+        bed.total_beds = req.total_beds
+        bed.occupied_beds = req.occupied_beds
+        bed.oxygen_supported_beds = req.oxygen_supported_beds
+        bed.ventilator_beds = req.ventilator_beds
+        bed.last_updated_by = user_name
+        bed.updated_at = get_utc_now()
+        
+    session.add(bed)
+    session.commit()
+    session.refresh(bed)
+    return bed
+
+# ----------------- CHC WORKFORCE DUTY ROSTER -----------------
+class DutyRosterCreateRequest(BaseModel):
+    facility_id: str
+    staff_name: str
+    role_title: str
+    shift: str
+    roster_date: str
+    status: str = "ON_DUTY"
+    contact_number: Optional[str] = None
+
+@router.get("/chc/roster")
+def get_chc_roster(
+    facility_id: Optional[str] = Query(None),
+    roster_date: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    fid = facility_id or "chc_pollachi"
+    r_date = roster_date or date.today().isoformat()
+    
+    roster = session.exec(
+        select(models.DutyRoster)
+        .where(
+            models.DutyRoster.facility_id == fid,
+            models.DutyRoster.roster_date == r_date
+        )
+    ).all()
+    
+    if not roster:
+        sample_roster = [
+            models.DutyRoster(facility_id=fid, staff_name="Dr. M. Sangeetha", role_title="Medical Officer", shift="Morning (08:00 - 14:00)", roster_date=r_date, status="ON_DUTY", contact_number="+91 94431 10001"),
+            models.DutyRoster(facility_id=fid, staff_name="Dr. V. Karthik", role_title="Medical Officer", shift="Evening (14:00 - 20:00)", roster_date=r_date, status="SCHEDULED", contact_number="+91 94431 10002"),
+            models.DutyRoster(facility_id=fid, staff_name="Dr. R. Anand", role_title="Casualty MO", shift="Night (20:00 - 08:00)", roster_date=r_date, status="SCHEDULED", contact_number="+91 94431 10003"),
+            models.DutyRoster(facility_id=fid, staff_name="S. Malathi", role_title="Staff Nurse Incharge", shift="Morning (08:00 - 14:00)", roster_date=r_date, status="ON_DUTY", contact_number="+91 94431 10004"),
+            models.DutyRoster(facility_id=fid, staff_name="T. Vignesh", role_title="Chief Pharmacist", shift="General (09:00 - 17:00)", roster_date=r_date, status="ON_DUTY", contact_number="+91 94431 10005"),
+            models.DutyRoster(facility_id=fid, staff_name="P. Lakshmi", role_title="Lab Technician", shift="General (09:00 - 17:00)", roster_date=r_date, status="ON_DUTY", contact_number="+91 94431 10006")
+        ]
+        for s in sample_roster:
+            session.add(s)
+        session.commit()
+        for s in sample_roster:
+            session.refresh(s)
+        roster = sample_roster
+    return roster
+
+@router.post("/chc/roster")
+def add_chc_roster_entry(
+    req: DutyRosterCreateRequest,
+    session: Session = Depends(get_session)
+):
+    entry = models.DutyRoster(
+        facility_id=req.facility_id,
+        staff_name=req.staff_name,
+        role_title=req.role_title,
+        shift=req.shift,
+        roster_date=req.roster_date,
+        status=req.status,
+        contact_number=req.contact_number
+    )
+    session.add(entry)
+    session.commit()
+    session.refresh(entry)
+    return entry
+
+
+# ----------------- PUBLIC HEALTH SURVEILLANCE & OUTBREAK MONITOR (IDSP) -----------------
+class DiseaseSurveillanceReportRequest(BaseModel):
+    district_id: str
+    facility_id: Optional[str] = None
+    disease_name: str
+    reported_cases: int
+    suspected_cases: int
+    confirmed_cases: int
+    reporting_week: str
+    reporting_date: str
+    alert_level: str = "NORMAL"
+    affected_villages: Optional[str] = None
+    action_taken: Optional[str] = None
+
+@router.get("/district/surveillance")
+def get_district_surveillance(
+    district_id: Optional[str] = Query("coimbatore"),
+    session: Session = Depends(get_session)
+):
+    records = session.exec(
+        select(models.DiseaseSurveillance)
+        .where(models.DiseaseSurveillance.district_id == district_id)
+        .order_by(models.DiseaseSurveillance.reporting_date.desc())
+    ).all()
+    
+    if not records:
+        today_str = date.today().isoformat()
+        sample_reports = [
+            models.DiseaseSurveillance(
+                surveillance_code="IDSP-2026-0310",
+                district_id=district_id,
+                facility_id="phc_valparai",
+                disease_name="Dengue Fever",
+                reported_cases=14,
+                suspected_cases=22,
+                confirmed_cases=8,
+                reporting_week="2026-W41",
+                reporting_date=today_str,
+                alert_level="OUTBREAK_WARNING",
+                affected_villages="Waterfall Estate, Valparai Town Ward 4, Sholayar",
+                action_taken="Source reduction drive initiated; 500 Paracetamol strips & 250 ORS sachets redistributed; fogging team mobilized.",
+                reported_by="District Epidemiologist"
+            ),
+            models.DiseaseSurveillance(
+                surveillance_code="IDSP-2026-0308",
+                district_id=district_id,
+                facility_id="phc_aliyar",
+                disease_name="Acute Diarrheal Disease (ADD)",
+                reported_cases=19,
+                suspected_cases=25,
+                confirmed_cases=12,
+                reporting_week="2026-W41",
+                reporting_date=today_str,
+                alert_level="WATCH",
+                affected_villages="Aliyar Colony, Navamalai Tribal Settlement",
+                action_taken="Chlorination of community overhead tanks verified; zinc & ORS buffer positioned.",
+                reported_by="Block Medical Officer Anaimalai"
+            ),
+            models.DiseaseSurveillance(
+                surveillance_code="IDSP-2026-0299",
+                district_id=district_id,
+                facility_id="chc_pollachi",
+                disease_name="Influenza-like Illness (ILI)",
+                reported_cases=45,
+                suspected_cases=60,
+                confirmed_cases=18,
+                reporting_week="2026-W40",
+                reporting_date=(date.today() - timedelta(days=7)).isoformat(),
+                alert_level="NORMAL",
+                affected_villages="Pollachi Urban cluster",
+                action_taken="Fever OPD screening running daily; Azithromycin & Cetirizine stock sufficient.",
+                reported_by="CHC Epidemiological Surveillance Unit"
+            )
+        ]
+        for r in sample_reports:
+            session.add(r)
+        session.commit()
+        for r in sample_reports:
+            session.refresh(r)
+        records = sample_reports
+    return records
+
+@router.post("/district/surveillance/report")
+def report_disease_surveillance(
+    req: DiseaseSurveillanceReportRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    code = f"IDSP-2026-{uuid.uuid4().hex[:5].upper()}"
+    rec = models.DiseaseSurveillance(
+        surveillance_code=code,
+        district_id=req.district_id,
+        facility_id=req.facility_id,
+        disease_name=req.disease_name,
+        reported_cases=req.reported_cases,
+        suspected_cases=req.suspected_cases,
+        confirmed_cases=req.confirmed_cases,
+        reporting_week=req.reporting_week,
+        reporting_date=req.reporting_date,
+        alert_level=req.alert_level,
+        affected_villages=req.affected_villages,
+        action_taken=req.action_taken,
+        reported_by=current_user.name if current_user else "District Epidemiologist"
+    )
+    session.add(rec)
+    
+    # If outbreak, create high-priority notification for district and state
+    if req.alert_level in ("OUTBREAK_WARNING", "EPIDEMIC_SURGE"):
+        notif = models.Notification(
+            target_role="district_officer",
+            title=f"Outbreak Warning: {req.disease_name} in {req.district_id.title()}",
+            message=f"{req.reported_cases} cases reported in week {req.reporting_week}. Ensure medicine buffer and preventive supplies.",
+            category="STOCK_ALERT",
+            priority="CRITICAL"
+        )
+        session.add(notif)
+        
+    session.commit()
+    session.refresh(rec)
+    return rec
+
+@router.get("/district/indents/consolidate")
+def get_consolidated_district_indents(
+    district_id: Optional[str] = Query("coimbatore"),
+    session: Session = Depends(get_session)
+):
+    alerts = session.exec(select(models.Alert).where(models.Alert.tier.in_(["CRITICAL", "HIGH"]))).all()
+    meds = {m.id: m for m in session.exec(select(models.Medicine)).all()}
+    centres = {c.id: c for c in session.exec(select(models.Centre)).all()}
+    
+    consolidated: Dict[str, Dict[str, Any]] = {}
+    for a in alerts:
+        med = meds.get(a.medicine_id)
+        med_name = med.name if med else a.medicine_id
+        centre = centres.get(a.centre_id)
+        centre_name = centre.name if centre else a.centre_id
+        
+        if a.medicine_id not in consolidated:
+            consolidated[a.medicine_id] = {
+                "medicine_id": a.medicine_id,
+                "medicine_name": med_name,
+                "unit": med.unit if med else "units",
+                "affected_facilities_count": 0,
+                "facilities": [],
+                "total_recommended_order_qty": 0,
+                "highest_urgency": 0,
+                "fastest_stockout_days": 999.0
+            }
+        
+        entry = consolidated[a.medicine_id]
+        entry["affected_facilities_count"] += 1
+        entry["total_recommended_order_qty"] += max(a.recommended_order_qty, 100)
+        entry["highest_urgency"] = max(entry["highest_urgency"], a.urgency)
+        entry["fastest_stockout_days"] = min(entry["fastest_stockout_days"], a.days_of_cover)
+        entry["facilities"].append({
+            "centre_id": a.centre_id,
+            "centre_name": centre_name,
+            "tier": a.tier,
+            "days_of_cover": a.days_of_cover,
+            "order_qty": a.recommended_order_qty
+        })
+        
+    result_list = list(consolidated.values())
+    result_list.sort(key=lambda x: x["highest_urgency"], reverse=True)
+    return {
+        "district": district_id.title(),
+        "total_critical_medicines": len(result_list),
+        "consolidated_indents": result_list
+    }
+
+
+# ----------------- NATIONAL STRATEGIC RESERVES & PROCUREMENT -----------------
+class StrategicReserveReallocateRequest(BaseModel):
+    reserve_id: str
+    allocated_quantity: int
+    destination_state_or_district: str
+    reason: str
+
+@router.get("/national/reserves")
+def get_national_reserves(session: Session = Depends(get_session)):
+    reserves = session.exec(select(models.StrategicReserve)).all()
+    if not reserves:
+        sample_reserves = [
+            models.StrategicReserve(
+                depot_name="Central Medical Store Depot (CMSD) - Chennai",
+                depot_code="CMSD-CHN",
+                state_id="TN",
+                medicine_id="med_pcm",
+                buffer_quantity=250000,
+                reserved_quantity=45000,
+                minimum_threshold=50000,
+                depot_manager="Dr. R. Ramanathan, Chief Medical Storekeeper",
+                last_inspected="2026-10-10"
+            ),
+            models.StrategicReserve(
+                depot_name="Central Medical Store Depot (CMSD) - Chennai",
+                depot_code="CMSD-CHN",
+                state_id="TN",
+                medicine_id="med_asv",
+                buffer_quantity=5000,
+                reserved_quantity=800,
+                minimum_threshold=1000,
+                depot_manager="Dr. R. Ramanathan, Chief Medical Storekeeper",
+                last_inspected="2026-10-11"
+            ),
+            models.StrategicReserve(
+                depot_name="Northern Regional Buffer Depot - Delhi",
+                depot_code="CMSD-DEL",
+                state_id="DL",
+                medicine_id="med_amox",
+                buffer_quantity=180000,
+                reserved_quantity=30000,
+                minimum_threshold=40000,
+                depot_manager="Shri S. K. Sharma",
+                last_inspected="2026-10-09"
+            ),
+            models.StrategicReserve(
+                depot_name="Western Regional Buffer Depot - Mumbai",
+                depot_code="CMSD-MUM",
+                state_id="MH",
+                medicine_id="med_ors",
+                buffer_quantity=120000,
+                reserved_quantity=15000,
+                minimum_threshold=25000,
+                depot_manager="Dr. Anita Kulkarni",
+                last_inspected="2026-10-12"
+            )
+        ]
+        for r in sample_reserves:
+            session.add(r)
+        session.commit()
+        for r in sample_reserves:
+            session.refresh(r)
+        reserves = sample_reserves
+        
+    meds = {m.id: m.name for m in session.exec(select(models.Medicine)).all()}
+    out = []
+    for r in reserves:
+        d = r.model_dump()
+        d["medicine_name"] = meds.get(r.medicine_id, r.medicine_id)
+        out.append(d)
+    return out
+
+@router.post("/national/reserves/reallocate")
+def reallocate_strategic_reserve(
+    req: StrategicReserveReallocateRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    session: Session = Depends(get_session)
+):
+    reserve = session.get(models.StrategicReserve, req.reserve_id)
+    if not reserve:
+        raise HTTPException(status_code=404, detail="Strategic reserve record not found")
+        
+    available = reserve.buffer_quantity - reserve.reserved_quantity
+    if req.allocated_quantity > available:
+        raise HTTPException(status_code=400, detail=f"Requested quantity ({req.allocated_quantity}) exceeds available buffer ({available})")
+        
+    reserve.reserved_quantity += req.allocated_quantity
+    session.add(reserve)
+    
+    # Audit trail
+    record_audit(
+        session,
+        "STRATEGIC_BUFFER_RELEASE",
+        "strategic_reserve",
+        reserve.id,
+        current_user.name if current_user else "National Health Officer",
+        current_user.role if current_user else "national_officer",
+        f"Dispatched {req.allocated_quantity} units from {reserve.depot_code} to {req.destination_state_or_district}: {req.reason}"
+    )
+    session.commit()
+    session.refresh(reserve)
+    return {"status": "success", "reserve": reserve}
+
+@router.get("/national/procurement")
+def get_national_procurement_pipeline(session: Session = Depends(get_session)):
+    suppliers = session.exec(select(models.Supplier)).all()
+    orders = session.exec(select(models.PurchaseOrder)).all()
+    
+    return {
+        "active_central_contracts": 14,
+        "total_contract_value_inr": "₹ 142.5 Crores",
+        "central_suppliers": [s.model_dump() for s in suppliers],
+        "macro_orders": [o.model_dump() for o in orders],
+        "supply_chain_resilience_score": 96.2,
+        "average_supplier_lead_time_days": 4.8
+    }
+
+@router.get("/national/pharmacovigilance")
+def get_national_pharmacovigilance(session: Session = Depends(get_session)):
+    adrs = session.exec(select(models.ADRReport)).all()
+    
+    severity_counts = defaultdict(int)
+    drug_counts = defaultdict(int)
+    for a in adrs:
+        severity_counts[a.severity] += 1
+        drug_counts[a.medicine_id] += 1
+        
+    return {
+        "total_reported_events": len(adrs),
+        "severity_breakdown": dict(severity_counts),
+        "signals_by_medicine": dict(drug_counts),
+        "recent_signals": [a.model_dump() for a in adrs[:10]]
+    }
+
 
 
 

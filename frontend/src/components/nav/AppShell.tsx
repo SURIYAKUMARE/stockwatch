@@ -20,6 +20,17 @@ import {
   Bell,
   Menu,
   X,
+  Calendar,
+  Receipt,
+  Truck,
+  Thermometer,
+  AlertOctagon,
+  BedDouble,
+  GitMerge,
+  UserCheck,
+  Radio,
+  FileSpreadsheet,
+  Boxes
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
@@ -34,11 +45,15 @@ export type AppScreen =
   // patient
   | 'medicine_search'
   | 'nearby_pharmacies'
+  | 'appointments'
+  | 'medical_records'
   | 'my_enquiries'
   | 'saved_pharmacies'
   // pharmacist / facility
   | 'inventory'
   | 'inventory_manager'
+  | 'pos_billing'
+  | 'suppliers_orders'
   | 'stock_entry'
   | 'expiry_batches'
   | 'import_csv'
@@ -46,6 +61,19 @@ export type AppScreen =
   | 'centre_detail'
   | 'forecast'
   | 'stock_entry_facility'
+  | 'cold_chain'
+  | 'adr_reporting'
+  // chc facility
+  | 'chc_beds'
+  | 'chc_referrals'
+  | 'chc_roster'
+  // district / state
+  | 'surveillance'
+  | 'district_indents'
+  // national
+  | 'strategic_reserves'
+  | 'national_procurement'
+  | 'pharmacovigilance_hub'
   // officer shared
   | 'priority_alerts'
   | 'command_center'
@@ -72,12 +100,15 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
       return [
         { id: 'medicine_search', label: 'Find Medicines', labelTa: 'மருந்து தேடல்', icon: Search },
         { id: 'nearby_pharmacies', label: 'Nearby Pharmacies', labelTa: 'அருகிலுள்ள மருந்தகங்கள்', icon: MapPin },
+        { id: 'appointments', label: 'OPD Appointments', labelTa: 'OPD முன்பதிவுகள்', icon: Calendar },
+        { id: 'medical_records', label: 'Health Records', labelTa: 'சுகாதார பதிவுகள்', icon: FileText },
         { id: 'my_enquiries', label: 'My Enquiries', labelTa: 'என் கேள்விகள்', icon: ClipboardPen },
         { id: 'saved_pharmacies', label: 'Saved Pharmacies', labelTa: 'சேமித்த மருந்தகங்கள்', icon: Star },
       ];
     case 'pharmacist':
       return [
         { id: 'dashboard', label: 'Dashboard', labelTa: 'டாஷ்போர்டு', icon: LayoutDashboard },
+        { id: 'pos_billing', label: 'POS Billing & GST', labelTa: 'விற்பனை பில்லிங் & GST', icon: Receipt },
         { id: 'inventory', label: 'Inventory', labelTa: 'இருப்பு', icon: Activity },
         { id: 'inventory_manager', label: 'Inventory Ledger', labelTa: 'இருப்பு பதிவேடு', icon: FileText },
         { id: 'stock_entry', label: 'Stock Entry', labelTa: 'இருப்பு பதிவு', icon: ClipboardPen,
@@ -85,6 +116,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
         { id: 'alerts', label: 'Alerts', labelTa: 'எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'expiry_batches', label: 'Expiry Tracker', labelTa: 'காலாவதி கண்காணிப்பு', icon: BarChart3 },
+        { id: 'suppliers_orders', label: 'Supplier Orders', labelTa: 'சப்ளையர் ஆர்டர்கள்', icon: Truck },
         { id: 'import_csv', label: 'Import CSV', labelTa: 'CSV இறக்குமதி', icon: FileText },
         { id: 'medicine_catalogue', label: 'Medicine Catalogue', labelTa: 'மருந்து பட்டியல்', icon: Activity },
         { id: 'map_view', label: 'Network Stock Map', labelTa: 'வரைபட இருப்பு விவரம்', icon: MapPin },
@@ -98,6 +130,8 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'stock_entry_facility', label: 'Stock Entry', labelTa: 'இருப்பு பதிவு', icon: ClipboardPen,
           badge: pendingSync > 0 ? `${pendingSync} sync` : null, badgeColor: 'bg-orange-100 text-orange-700' },
+        { id: 'cold_chain', label: 'Cold Chain Logs', labelTa: 'குளிர்சாதன பதிவுகள்', icon: Thermometer },
+        { id: 'adr_reporting', label: 'ADR Pharmacovigilance', labelTa: 'பக்கவிளைவு அறிக்கை', icon: AlertOctagon },
         { id: 'map_view', label: 'District Stock Map', labelTa: 'வரைபட இருப்பு விவரம்', icon: MapPin },
         { id: 'centre_detail', label: 'Centre Inventory', labelTa: 'மைய விவரம்', icon: Activity },
         { id: 'forecast', label: 'Forecast Accuracy', labelTa: 'முன்கணிப்பு துல்லியம்', icon: BarChart3 },
@@ -107,6 +141,9 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
     case 'chc_facility':
       return [
         { id: 'command_center', label: 'CHC Command Center', labelTa: 'CHC கட்டளை மையம்', icon: LayoutDashboard },
+        { id: 'chc_beds', label: 'Inpatient Beds & ICU', labelTa: 'படுக்கை திறன்', icon: BedDouble },
+        { id: 'chc_referrals', label: 'Patient Referrals', labelTa: 'நோயாளி பரிந்துரைகள்', icon: GitMerge },
+        { id: 'chc_roster', label: 'Shift Duty Roster', labelTa: 'பணி அட்டவணை', icon: UserCheck },
         { id: 'priority_alerts', label: 'Cluster Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'map_view', label: 'Cluster Map & Shops', labelTa: 'வட்டார வரைபடம்', icon: MapPin },
@@ -118,6 +155,8 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
     case 'district_officer':
       return [
         { id: 'command_center', label: 'Command Center', labelTa: 'கட்டளை மையம்', icon: LayoutDashboard },
+        { id: 'surveillance', label: 'Outbreak Surveillance', labelTa: 'நோய் கண்காணிப்பு (IDSP)', icon: Radio },
+        { id: 'district_indents', label: 'Consolidated Indents', labelTa: 'ஒருங்கிணைந்த தேவைகள்', icon: FileSpreadsheet },
         { id: 'priority_alerts', label: 'Priority Alerts', labelTa: 'முன்னுரிமை எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'map_view', label: 'Network Stock Map', labelTa: 'வரைபட இருப்பு விவரம்', icon: MapPin },
@@ -131,6 +170,7 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
     case 'state_officer':
       return [
         { id: 'dashboard', label: 'State Overview', labelTa: 'மாநில கண்ணோட்டம்', icon: LayoutDashboard },
+        { id: 'surveillance', label: 'Disease Surveillance', labelTa: 'நோய் கண்காணிப்பு', icon: Radio },
         { id: 'priority_alerts', label: 'Critical Alerts', labelTa: 'ஆபத்தான எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'map_view', label: 'District Stock Map', labelTa: 'மாவட்ட வரைபடம்', icon: MapPin },
@@ -144,6 +184,9 @@ function getNavItems(role: UserRole, criticalCount: number, pendingSync: number)
     case 'national_officer':
       return [
         { id: 'dashboard', label: 'National Overview', labelTa: 'தேசிய கண்ணோட்டம்', icon: LayoutDashboard },
+        { id: 'strategic_reserves', label: 'Strategic Reserves', labelTa: 'தேசிய இருப்பு சேமிப்பு', icon: Boxes },
+        { id: 'national_procurement', label: 'Procurement Pipeline', labelTa: 'கொள்முதல் பைப்லைன்', icon: Truck },
+        { id: 'pharmacovigilance_hub', label: 'Pharmacovigilance Hub', labelTa: 'மருந்து பாதுகாப்பு மையம்', icon: AlertOctagon },
         { id: 'priority_alerts', label: 'Critical Alerts', labelTa: 'ஆபத்தான எச்சரிக்கைகள்', icon: ShieldAlert,
           badge: criticalCount > 0 ? criticalCount : null, badgeColor: 'bg-red-100 text-red-700' },
         { id: 'map_view', label: 'Geospatial Stock Map', labelTa: 'தேசிய வரைபடம்', icon: MapPin },

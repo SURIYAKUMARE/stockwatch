@@ -3,7 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from .database import init_db
 from .api import router as api_router
+
+# Ensure all database tables exist
+init_db()
 
 app = FastAPI(title="StockWatch PHC API")
 

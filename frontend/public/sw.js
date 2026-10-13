@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stockwatch-phc-v7';
+const CACHE_NAME = 'stockwatch-phc-v8';
 const API_CACHE_NAME = 'stockwatch-api-cache-v1';
 
 const STATIC_ASSETS = [

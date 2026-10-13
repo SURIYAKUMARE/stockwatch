@@ -19,10 +19,19 @@ import {
   Pill,
   BookOpen,
   Plus,
-  Navigation
+  Navigation,
+  FileText,
+  Stethoscope,
+  Trash2,
+  CalendarCheck
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type { AppScreen } from '../../components/nav/AppShell';
+import type { Appointment, MedicalRecord } from '../../types';
+import {
+  FALLBACK_APPOINTMENTS,
+  FALLBACK_MEDICAL_RECORDS
+} from '../../db/demoFallbackData';
 import {
   savePriceComparisonToCache,
   getCachedPriceComparison,
@@ -122,6 +131,33 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   const [isLoadingReminders, setIsLoadingReminders] = useState(false);
   const [showAddReminderModal, setShowAddReminderModal] = useState(false);
 
+  // Navigation tab state synced with activeScreen
+  const [activeTab, setActiveTab] = useState<'search' | 'appointments' | 'records' | 'reminders'>('search');
+
+  // Appointments State
+  const [appointments, setAppointments] = useState<Appointment[]>(FALLBACK_APPOINTMENTS as any);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(false);
+  const [showBookAptModal, setShowBookAptModal] = useState(false);
+  const [aptDepartment, setAptDepartment] = useState('General OPD');
+  const [aptFacilityId, setAptFacilityId] = useState('phc_valparai');
+  const [aptDate, setAptDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [aptTime, setAptTime] = useState('10:00 AM');
+  const [aptDoctor, setAptDoctor] = useState('Dr. S. Kulanthaivel, MBBS');
+  const [aptSymptoms, setAptSymptoms] = useState('');
+  const [aptPatientName, setAptPatientName] = useState('Kavitha Murugan');
+  const [aptPhone, setAptPhone] = useState('+91 98421 12345');
+
+  // Medical Records State
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>(FALLBACK_MEDICAL_RECORDS as any);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [showAddRecordModal, setShowAddRecordModal] = useState(false);
+  const [recTitle, setRecTitle] = useState('');
+  const [recType, setRecType] = useState<'PRESCRIPTION' | 'LAB_REPORT'>('PRESCRIPTION');
+  const [recDoctor, setRecDoctor] = useState('Dr. S. Kulanthaivel, MBBS');
+  const [recDate, setRecDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [recDiagnosis, setRecDiagnosis] = useState('');
+  const [recNotes, setRecNotes] = useState('');
+
   // New Reminder Form State
   const [newMedName, setNewMedName] = useState('');
   const [newDose, setNewDose] = useState('1 tablet');
@@ -129,6 +165,136 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   const [newInstructions, setNewInstructions] = useState('Take with water after breakfast');
   const [isOfflinePricing, setIsOfflinePricing] = useState(false);
   const [offlineCachedTime, setOfflineCachedTime] = useState<string | null>(null);
+
+  // Sync activeScreen with activeTab
+  useEffect(() => {
+    if (activeScreen === 'appointments') setActiveTab('appointments');
+    else if (activeScreen === 'medical_records') setActiveTab('records');
+    else if (activeScreen === 'medicine_search' || activeScreen === 'nearby_pharmacies') setActiveTab('search');
+  }, [activeScreen]);
+
+  const fetchAppointments = async () => {
+    setIsLoadingAppointments(true);
+    try {
+      const res = await fetch('/api/patient/appointments');
+      if (res.ok) {
+        const data = await res.json();
+        setAppointments(data);
+      }
+    } catch {
+      setAppointments(FALLBACK_APPOINTMENTS as any);
+    } finally {
+      setIsLoadingAppointments(false);
+    }
+  };
+
+  const handleBookAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/patient/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facility_id: aptFacilityId,
+          department: aptDepartment,
+          doctor_name: aptDoctor,
+          appointment_date: aptDate,
+          appointment_time: aptTime,
+          symptoms: aptSymptoms,
+          patient_name: aptPatientName,
+          patient_phone: aptPhone
+        })
+      });
+      if (res.ok) {
+        setShowBookAptModal(false);
+        setAptSymptoms('');
+        await fetchAppointments();
+      }
+    } catch {
+      const newApt: Appointment = {
+        id: 'apt-' + Date.now(),
+        patient_id: 'user_patient_01',
+        patient_name: aptPatientName,
+        patient_phone: aptPhone,
+        facility_id: aptFacilityId,
+        department: aptDepartment,
+        doctor_name: aptDoctor,
+        appointment_date: aptDate,
+        appointment_time: aptTime,
+        symptoms: aptSymptoms,
+        status: 'CONFIRMED',
+        token_number: 'OPD-' + (Math.floor(Math.random() * 900) + 100),
+        created_at: new Date().toISOString()
+      };
+      setAppointments(prev => [newApt, ...prev]);
+      setShowBookAptModal(false);
+    }
+  };
+
+  const handleCancelAppointment = async (id: string) => {
+    try {
+      await fetch(`/api/patient/appointments/${id}/cancel`, { method: 'POST' });
+      fetchAppointments();
+    } catch {
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'CANCELLED' } : a));
+    }
+  };
+
+  const fetchRecords = async () => {
+    setIsLoadingRecords(true);
+    try {
+      const res = await fetch('/api/patient/records');
+      if (res.ok) {
+        const data = await res.json();
+        setMedicalRecords(data);
+      }
+    } catch {
+      setMedicalRecords(FALLBACK_MEDICAL_RECORDS as any);
+    } finally {
+      setIsLoadingRecords(false);
+    }
+  };
+
+  const handleAddRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/patient/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facility_id: aptFacilityId,
+          record_type: recType,
+          title: recTitle,
+          doctor_name: recDoctor,
+          record_date: recDate,
+          diagnosis: recDiagnosis,
+          medicines_prescribed: [],
+          lab_results: {},
+          notes: recNotes
+        })
+      });
+      if (res.ok) {
+        setShowAddRecordModal(false);
+        setRecTitle('');
+        setRecNotes('');
+        await fetchRecords();
+      }
+    } catch {
+      const newRec: MedicalRecord = {
+        id: 'rec-' + Date.now(),
+        patient_id: 'user_patient_01',
+        record_type: recType,
+        title: recTitle,
+        doctor_name: recDoctor,
+        record_date: recDate,
+        diagnosis: recDiagnosis,
+        notes: recNotes,
+        created_at: new Date().toISOString()
+      };
+      setMedicalRecords(prev => [newRec, ...prev]);
+      setShowAddRecordModal(false);
+    }
+  };
 
   // Fetch Price Comparison Data with Offline IndexedDB Fallback
   const fetchPriceComparison = async (medQuery: string) => {
@@ -287,6 +453,8 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   useEffect(() => {
     fetchPriceComparison(searchQuery);
     fetchRemindersData();
+    fetchAppointments();
+    fetchRecords();
   }, []);
 
   return (
@@ -296,35 +464,290 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
         <div>
           <h1 className="text-lg font-bold text-[#14202B] flex items-center gap-2">
             <Pill className="text-[#0F6B6B]" size={20} />
-            {isTa ? 'நோயாளி உதவி மையம் & மருந்து வழிகாட்டி' : 'Patient Care & Medicine Availability Network'}
+            {isTa ? 'நோயாளி உதவி மையம் & விரிவான சுகாதார சேவைகள்' : 'Patient Care & Integrated Healthcare Network'}
           </h1>
           <p className="text-xs text-[#5B6B7A] mt-0.5">
             {isTa
-              ? 'அருகிலுள்ள மருந்தகங்கள், விலைகள், கூகிள் மேப்ஸ் வழிகள் மற்றும் உங்கள் மருந்து நினைவூட்டல்கள்.'
-              : 'Search nearby verified pharmacies, compare prices, get Google Maps directions, and track your daily prescriptions.'}
+              ? 'அருகிலுள்ள மருந்தகங்கள், OPD முன்பதிவுகள், மருத்துவ பதிவுகள் மற்றும் மருந்து நினைவூட்டல்கள்.'
+              : 'Book OPD appointments, view digital lab reports & prescriptions, find essential medicines, and track daily schedules.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetchMonograph('med_pcm')}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#E3E8EE] text-[#14202B] hover:bg-[#F7F9FB] flex items-center gap-1.5 transition-colors"
-          >
-            <BookOpen size={14} className="text-[#0F6B6B]" />
-            <span>Drug Monographs</span>
-          </button>
-          <button
-            onClick={() => setShowAddReminderModal(true)}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs transition-colors"
-          >
-            <Plus size={14} />
-            <span>Add Reminder</span>
-          </button>
+          {activeTab === 'appointments' ? (
+            <button
+              onClick={() => setShowBookAptModal(true)}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              <CalendarCheck size={14} />
+              <span>Book Appointment</span>
+            </button>
+          ) : activeTab === 'records' ? (
+            <button
+              onClick={() => setShowAddRecordModal(true)}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              <Plus size={14} />
+              <span>Add Health Record</span>
+            </button>
+          ) : activeTab === 'reminders' ? (
+            <button
+              onClick={() => setShowAddReminderModal(true)}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              <Plus size={14} />
+              <span>Add Reminder</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => fetchMonograph('med_pcm')}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#E3E8EE] text-[#14202B] hover:bg-[#F7F9FB] flex items-center gap-1.5 transition-colors"
+            >
+              <BookOpen size={14} className="text-[#0F6B6B]" />
+              <span>Drug Monographs</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ── Adherence Tracker Strip ── */}
-      {adherenceReport && (
+      {/* ── Patient Portal Navigation Tabs ── */}
+      <div className="flex border-b border-[#E3E8EE] bg-white rounded-xl p-1.5 shadow-2xs gap-1 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('search')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'search'
+              ? 'bg-[#0F6B6B] text-white shadow-xs'
+              : 'text-[#5B6B7A] hover:bg-[#F7F9FB] hover:text-[#14202B]'
+          }`}
+        >
+          <Search size={15} />
+          <span>{isTa ? 'மருந்து தேடல் & விலை ஒப்பீடு' : 'Find Medicines & Stores'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('appointments')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'appointments'
+              ? 'bg-[#0F6B6B] text-white shadow-xs'
+              : 'text-[#5B6B7A] hover:bg-[#F7F9FB] hover:text-[#14202B]'
+          }`}
+        >
+          <CalendarCheck size={15} />
+          <span>{isTa ? 'OPD முன்பதிவுகள்' : 'OPD Appointments'}</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+            activeTab === 'appointments' ? 'bg-white/20 text-white' : 'bg-teal-100 text-teal-800'
+          }`}>
+            {appointments.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('records')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'records'
+              ? 'bg-[#0F6B6B] text-white shadow-xs'
+              : 'text-[#5B6B7A] hover:bg-[#F7F9FB] hover:text-[#14202B]'
+          }`}
+        >
+          <FileText size={15} />
+          <span>{isTa ? 'சுகாதார பதிவுகள் & மருந்து சீட்டுகள்' : 'Digital Health Records'}</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+            activeTab === 'records' ? 'bg-white/20 text-white' : 'bg-teal-100 text-teal-800'
+          }`}>
+            {medicalRecords.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('reminders')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'reminders'
+              ? 'bg-[#0F6B6B] text-white shadow-xs'
+              : 'text-[#5B6B7A] hover:bg-[#F7F9FB] hover:text-[#14202B]'
+          }`}
+        >
+          <BellRing size={15} />
+          <span>{isTa ? 'மருந்து அட்டவணை' : 'Daily Medication Schedule'}</span>
+        </button>
+      </div>
+
+      {/* ── SECTION 1: OPD APPOINTMENTS TAB ── */}
+      {activeTab === 'appointments' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-teal-50 border border-teal-200 rounded-xl p-4">
+            <div>
+              <h2 className="text-sm font-bold text-[#14202B]">Active Outpatient (OPD) Consultations</h2>
+              <p className="text-xs text-[#5B6B7A]">Confirmed bookings at Primary Health Centres & Community Health Centres.</p>
+            </div>
+            <button
+              onClick={() => setShowBookAptModal(true)}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5"
+            >
+              <CalendarCheck size={14} />
+              <span>Book OPD Token</span>
+            </button>
+          </div>
+
+          {appointments.length === 0 ? (
+            <div className="bg-white rounded-xl border border-[#E3E8EE] p-8 text-center text-xs text-[#5B6B7A]">
+              No active appointments found. Click "Book OPD Token" to schedule your consultation.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {appointments.map((apt) => (
+                <div key={apt.id} className="bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-xs space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md font-mono font-extrabold text-xs bg-[#0F6B6B] text-white">
+                          {apt.token_number}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          apt.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                          apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                          'bg-rose-100 text-rose-800'
+                        }`}>
+                          {apt.status}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-[#14202B] mt-2">{apt.department}</h3>
+                      <p className="text-xs font-semibold text-[#0F6B6B]">{apt.doctor_name}</p>
+                    </div>
+
+                    {apt.status === 'CONFIRMED' && (
+                      <button
+                        onClick={() => handleCancelAppointment(apt.id)}
+                        className="text-xs font-medium text-rose-600 hover:text-rose-800 p-1 rounded hover:bg-rose-50 flex items-center gap-1"
+                      >
+                        <Trash2 size={13} />
+                        <span>Cancel</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 bg-[#F7F9FB] p-3 rounded-lg text-xs">
+                    <div>
+                      <span className="text-[10px] text-[#5B6B7A] block font-semibold">Scheduled Date</span>
+                      <span className="font-bold text-[#14202B]">{apt.appointment_date}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#5B6B7A] block font-semibold">Appointment Time</span>
+                      <span className="font-bold text-[#14202B]">{apt.appointment_time}</span>
+                    </div>
+                    <div className="col-span-2 mt-1">
+                      <span className="text-[10px] text-[#5B6B7A] block font-semibold">Reported Symptoms</span>
+                      <span className="text-[#14202B]">{apt.symptoms || 'General wellness checkup'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION 2: DIGITAL HEALTH RECORDS TAB ── */}
+      {activeTab === 'records' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-teal-50 border border-teal-200 rounded-xl p-4">
+            <div>
+              <h2 className="text-sm font-bold text-[#14202B]">Digital Health Records & Verified Prescriptions</h2>
+              <p className="text-xs text-[#5B6B7A]">Personal medical history, OPD prescriptions, and diagnostic lab reports.</p>
+            </div>
+            <button
+              onClick={() => setShowAddRecordModal(true)}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              <span>Add Record</span>
+            </button>
+          </div>
+
+          {medicalRecords.length === 0 ? (
+            <div className="bg-white rounded-xl border border-[#E3E8EE] p-8 text-center text-xs text-[#5B6B7A]">
+              No digital health records found.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {medicalRecords.map((rec) => (
+                <div key={rec.id} className="bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-xs space-y-4">
+                  <div className="flex items-start justify-between pb-3 border-b border-[#E3E8EE]">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                          rec.record_type === 'PRESCRIPTION' ? 'bg-teal-100 text-teal-800' : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {rec.record_type}
+                        </span>
+                        <span className="text-xs text-[#5B6B7A]">{rec.record_date}</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-[#14202B] mt-1">{rec.title}</h3>
+                      <p className="text-xs text-[#5B6B7A]">Consulting Physician: <strong className="text-[#14202B]">{rec.doctor_name}</strong></p>
+                    </div>
+                  </div>
+
+                  {rec.diagnosis && (
+                    <div className="text-xs bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-900">
+                      <strong>Clinical Diagnosis:</strong> {rec.diagnosis}
+                    </div>
+                  )}
+
+                  {rec.medicines_prescribed && rec.medicines_prescribed.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-[#14202B]">Prescribed Medications</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border border-[#E3E8EE] rounded-lg overflow-hidden">
+                          <thead className="bg-[#F7F9FB] text-[#5B6B7A] font-semibold border-b border-[#E3E8EE]">
+                            <tr>
+                              <th className="py-2 px-3">Medicine</th>
+                              <th className="py-2 px-3">Dosage</th>
+                              <th className="py-2 px-3">Duration</th>
+                              <th className="py-2 px-3">Instructions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#E3E8EE]">
+                            {rec.medicines_prescribed.map((m: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-slate-50">
+                                <td className="py-2 px-3 font-bold text-[#14202B]">{m.name}</td>
+                                <td className="py-2 px-3 text-[#5B6B7A]">{m.dosage}</td>
+                                <td className="py-2 px-3 text-[#5B6B7A]">{m.duration}</td>
+                                <td className="py-2 px-3 text-[#0F6B6B] font-medium">{m.instructions}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {rec.lab_results && Object.keys(rec.lab_results).length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-[#14202B]">Diagnostic Laboratory Findings</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {Object.entries(rec.lab_results).map(([param, val]: [string, any], idx) => (
+                          <div key={idx} className="bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg p-2.5 text-xs">
+                            <span className="text-[10px] text-[#5B6B7A] font-semibold block">{param}</span>
+                            <span className="font-bold text-[#14202B]">{String(val)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {rec.notes && (
+                    <div className="text-xs text-[#5B6B7A] bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      <strong>Physician Advice:</strong> {rec.notes}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION 3: REMINDERS TAB OR DEFAULT STRIP ── */}
+      {(activeTab === 'reminders' || activeTab === 'search') && adherenceReport && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl p-4">
           <div className="space-y-0.5">
             <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider">Adherence Rate</span>
@@ -362,96 +785,90 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
         </div>
       )}
 
-      {/* ── Medication Reminders Section ── */}
-      <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
-          <div className="flex items-center gap-2">
-            <Calendar className="text-[#0F6B6B]" size={18} />
-            <h2 className="text-sm font-bold text-[#14202B]">
-              {isTa ? 'இன்றைய மருந்து அட்டவணை' : "Today's Medication Schedule & Reminders"}
-            </h2>
+      {/* ── Medication Reminders (shown when reminders tab active, or as quick section) ── */}
+      {activeTab === 'reminders' && (
+        <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E3E8EE]">
+            <div className="flex items-center gap-2">
+              <Calendar className="text-[#0F6B6B]" size={18} />
+              <h2 className="text-sm font-bold text-[#14202B]">
+                {isTa ? 'இன்றைய மருந்து அட்டவணை' : "Today's Medication Schedule & Reminders"}
+              </h2>
+            </div>
+            <span className="text-xs text-[#5B6B7A] font-medium">
+              {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
           </div>
-          <span className="text-xs text-[#5B6B7A] font-medium">
-            {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-          </span>
-        </div>
 
-        {reminders.length === 0 ? (
-          <div className="text-center py-6 text-xs text-[#5B6B7A]">
-            No scheduled medications for today. Click "Add Reminder" to set up your prescription schedule.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {reminders.map((sched) => (
-              <div key={sched.id} className="border border-[#E3E8EE] rounded-xl p-4 bg-[#F7F9FB] space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#14202B]">{sched.medicine_name}</h3>
-                    <p className="text-xs text-[#5B6B7A]">{sched.dose_quantity} · {sched.prescribed_instructions}</p>
-                    {sched.doctor_name && (
-                      <p className="text-[10px] text-teal-800 font-semibold mt-0.5">Prescribed by {sched.doctor_name}</p>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-[#0F6B6B]">
-                    Active
-                  </span>
-                </div>
-
-                <div className="space-y-2 pt-1 border-t border-[#E3E8EE]">
-                  {sched.times_with_status.map((t, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-[#E3E8EE] text-xs">
-                      <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-[#5B6B7A]" />
-                        <span className="font-bold text-[#14202B]">{t.time}</span>
-                      </div>
-
-                      {t.status === 'TAKEN' ? (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          <Check size={12} /> Taken
-                        </span>
-                      ) : t.status === 'SKIPPED' ? (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-200">
-                          <X size={12} /> Skipped
-                        </span>
-                      ) : t.status === 'SNOOZED' ? (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                          <Clock size={12} /> Snoozed (+30m)
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleReminderAction(sched.id, t.time, 'TAKEN')}
-                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-md transition-colors flex items-center gap-1"
-                          >
-                            <Check size={11} /> Take
-                          </button>
-                          <button
-                            onClick={() => handleReminderAction(sched.id, t.time, 'SNOOZED')}
-                            className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded-md transition-colors flex items-center gap-1"
-                          >
-                            <BellRing size={11} /> Snooze
-                          </button>
-                          <button
-                            onClick={() => handleReminderAction(sched.id, t.time, 'SKIPPED')}
-                            className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-[10px] rounded-md transition-colors"
-                          >
-                            Skip
-                          </button>
-                        </div>
+          {reminders.length === 0 ? (
+            <div className="text-center py-6 text-xs text-[#5B6B7A]">
+              No scheduled medications for today. Click "Add Reminder" to set up your prescription schedule.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reminders.map((sched) => (
+                <div key={sched.id} className="border border-[#E3E8EE] rounded-xl p-4 bg-[#F7F9FB] space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-[#14202B]">{sched.medicine_name}</h3>
+                      <p className="text-xs text-[#5B6B7A]">{sched.dose_quantity} · {sched.prescribed_instructions}</p>
+                      {sched.doctor_name && (
+                        <p className="text-[10px] text-teal-800 font-semibold mt-0.5">Prescribed by {sched.doctor_name}</p>
                       )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-[#0F6B6B]">
+                      Active
+                    </span>
+                  </div>
 
-      {/* ── Medicine Search & Price Comparison Finder ── */}
-      <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
-        <div>
-          <h2 className="text-sm font-bold text-[#14202B] flex items-center gap-2">
+                  <div className="space-y-2 pt-1 border-t border-[#E3E8EE]">
+                    {sched.times_with_status.map((t, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-[#E3E8EE] text-xs">
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} className="text-[#5B6B7A]" />
+                          <span className="font-bold text-[#14202B]">{t.time}</span>
+                        </div>
+
+                        {t.status === 'TAKEN' ? (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            <Check size={12} /> Taken
+                          </span>
+                        ) : t.status === 'SKIPPED' ? (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-200">
+                            <X size={12} /> Skipped
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleLogDose(sched.id, t.time, 'TAKEN')}
+                              className="px-2 py-1 rounded-md bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold text-[10px] flex items-center gap-1 transition-colors"
+                            >
+                              <Check size={11} />
+                              <span>Take</span>
+                            </button>
+                            <button
+                              onClick={() => handleLogDose(sched.id, t.time, 'SKIPPED')}
+                              className="px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold text-[10px] transition-colors"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION 4: MEDICINE & PRICE FINDER (SEARCH TAB) ── */}
+      {activeTab === 'search' && (
+        <div className="bg-white rounded-xl border border-[#E3E8EE] p-5 shadow-xs space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-[#14202B] flex items-center gap-2">
             <Search className="text-[#0F6B6B]" size={16} />
             <span>Medicine Availability & Price Comparison (Google Maps Integrated)</span>
           </h2>
@@ -590,6 +1007,7 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
           </div>
         )}
       </div>
+      )}
 
       {/* ── Verified Drug Monograph Modal ── */}
       {selectedMonograph && (
@@ -738,6 +1156,248 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
                   className="px-4 py-2 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold rounded-lg shadow-xs"
                 >
                   Save Reminder
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Book OPD Appointment Modal ── */}
+      {showBookAptModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-[#E3E8EE] p-5 space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E3E8EE]">
+              <div>
+                <h3 className="text-sm font-bold text-[#14202B]">Book OPD Consultation Token</h3>
+                <p className="text-[11px] text-[#5B6B7A]">Select department, doctor, and preferred time slot.</p>
+              </div>
+              <button onClick={() => setShowBookAptModal(false)} className="text-[#5B6B7A] p-1 rounded-md hover:bg-gray-100">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleBookAppointment} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Health Facility</label>
+                <select
+                  value={aptFacilityId}
+                  onChange={(e) => setAptFacilityId(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
+                >
+                  <option value="phc_valparai">PHC Valparai (Hill Station Primary Centre)</option>
+                  <option value="phc_aliyar">PHC Aliyar (Anaimalai Valley)</option>
+                  <option value="phc_anaimalai">PHC Anaimalai Town</option>
+                  <option value="chc_pollachi">Community Health Centre Pollachi Central</option>
+                  <option value="phc_kottur">PHC Kottur</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Clinical Department</label>
+                  <select
+                    value={aptDepartment}
+                    onChange={(e) => setAptDepartment(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
+                  >
+                    <option value="General OPD">General OPD</option>
+                    <option value="Pediatrics">Pediatrics & Child Health</option>
+                    <option value="Maternal Health">Maternal & Antenatal (MCH)</option>
+                    <option value="NCD Clinic">NCD (Diabetes & BP Clinic)</option>
+                    <option value="Dental">Dental OPD</option>
+                    <option value="AYUSH / Siddha">AYUSH / Siddha</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Doctor / Medical Officer</label>
+                  <input
+                    type="text"
+                    value={aptDoctor}
+                    onChange={(e) => setAptDoctor(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Appointment Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={aptDate}
+                    onChange={(e) => setAptDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Time Slot</label>
+                  <select
+                    value={aptTime}
+                    onChange={(e) => setAptTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
+                  >
+                    <option value="09:00 AM">09:00 AM</option>
+                    <option value="09:30 AM">09:30 AM</option>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="10:30 AM">10:30 AM</option>
+                    <option value="11:00 AM">11:00 AM</option>
+                    <option value="11:30 AM">11:30 AM</option>
+                    <option value="02:30 PM">02:30 PM</option>
+                    <option value="03:30 PM">03:30 PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Patient Name & Phone</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={aptPatientName}
+                    onChange={(e) => setAptPatientName(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={aptPhone}
+                    onChange={(e) => setAptPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Symptoms / Primary Complaint</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g., Continuous dry cough for 3 days, low grade fever, mild wheezing"
+                  value={aptSymptoms}
+                  onChange={(e) => setAptSymptoms(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#E3E8EE]">
+                <button
+                  type="button"
+                  onClick={() => setShowBookAptModal(false)}
+                  className="px-3 py-2 border border-[#E3E8EE] text-[#5B6B7A] font-semibold rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold rounded-lg shadow-xs"
+                >
+                  Confirm OPD Booking
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Digital Health Record Modal ── */}
+      {showAddRecordModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-[#E3E8EE] p-5 space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E3E8EE]">
+              <div>
+                <h3 className="text-sm font-bold text-[#14202B]">Add Digital Health Record</h3>
+                <p className="text-[11px] text-[#5B6B7A]">Save personal consultation, prescription, or diagnostic report.</p>
+              </div>
+              <button onClick={() => setShowAddRecordModal(false)} className="text-[#5B6B7A] p-1 rounded-md hover:bg-gray-100">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddRecord} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Record Type</label>
+                  <select
+                    value={recType}
+                    onChange={(e: any) => setRecType(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
+                  >
+                    <option value="PRESCRIPTION">Prescription</option>
+                    <option value="LAB_REPORT">Lab Report</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={recDate}
+                    onChange={(e) => setRecDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Record Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Follow-up Diabetes Review, Lipid Profile Test"
+                  value={recTitle}
+                  onChange={(e) => setRecTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Physician Name</label>
+                  <input
+                    type="text"
+                    value={recDoctor}
+                    onChange={(e) => setRecDoctor(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Diagnosis</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Essential Hypertension"
+                    value={recDiagnosis}
+                    onChange={(e) => setRecDiagnosis(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#14202B] mb-1">Physician Advice / Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="Doctor instructions, dietary recommendations, warning signs..."
+                  value={recNotes}
+                  onChange={(e) => setRecNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#E3E8EE]">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRecordModal(false)}
+                  className="px-3 py-2 border border-[#E3E8EE] text-[#5B6B7A] font-semibold rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold rounded-lg shadow-xs"
+                >
+                  Save Health Record
                 </button>
               </div>
             </form>

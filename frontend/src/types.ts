@@ -390,3 +390,171 @@ export interface BacktestData {
   }[];
   historical_events: BacktestEvent[];
 }
+
+// ================= ENTERPRISE HEALTHCARE WORKFLOW TYPES =================
+export interface Appointment {
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  patient_phone: string;
+  facility_id: string;
+  department: string;
+  doctor_name: string;
+  appointment_date: string;
+  appointment_time: string;
+  symptoms: string;
+  status: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'IN_CONSULTATION';
+  token_number: string;
+  created_at: string;
+}
+
+export interface MedicalRecord {
+  id: string;
+  patient_id: string;
+  facility_id?: string;
+  record_type: 'PRESCRIPTION' | 'LAB_REPORT' | 'DISCHARGE_SUMMARY' | 'VACCINATION';
+  title: string;
+  doctor_name: string;
+  record_date: string;
+  diagnosis?: string;
+  medicines_prescribed?: { name: string; dosage: string; duration: string; instructions: string }[];
+  lab_results?: Record<string, string>;
+  notes?: string;
+  created_at: string;
+}
+
+export interface RetailInvoiceItem {
+  medicine_id: string;
+  medicine_name: string;
+  batch: string;
+  qty: number;
+  unit_price: number;
+  gst_rate: number;
+  line_total: number;
+}
+
+export interface RetailInvoice {
+  id: string;
+  invoice_number: string;
+  pharmacy_id: string;
+  patient_name: string;
+  patient_phone: string;
+  doctor_name?: string;
+  items: RetailInvoiceItem[];
+  subtotal: number;
+  cgst: number;
+  sgst: number;
+  total_amount: number;
+  payment_mode: 'CASH' | 'UPI' | 'CARD';
+  created_by: string;
+  created_at: string;
+}
+
+export interface ColdChainLog {
+  id: string;
+  facility_id: string;
+  equipment_id: string;
+  equipment_type: 'ILR' | 'DF' | 'VACCINE_CARRIER';
+  temperature_celsius: number;
+  target_min: number;
+  target_max: number;
+  is_excursion: boolean;
+  excursion_severity: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  logged_by: string;
+  power_source: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ADRReport {
+  id: string;
+  report_reference: string;
+  facility_id: string;
+  patient_age: number;
+  patient_gender: string;
+  medicine_id: string;
+  batch_number: string;
+  reaction_description: string;
+  onset_date: string;
+  severity: 'MILD' | 'MODERATE' | 'SEVERE' | 'LIFE_THREATENING';
+  outcome: 'RECOVERED' | 'RECOVERING' | 'NOT_RECOVERED' | 'FATAL' | 'UNKNOWN';
+  action_taken: string;
+  reported_by: string;
+  reported_by_role: string;
+  created_at: string;
+}
+
+export interface Referral {
+  id: string;
+  referral_code: string;
+  patient_name: string;
+  patient_age: number;
+  patient_gender: string;
+  from_facility_id: string;
+  to_facility_id: string;
+  referral_reason: string;
+  urgency: 'ROUTINE' | 'PRIORITY' | 'EMERGENCY';
+  clinical_notes?: string;
+  status: 'REFERRED' | 'ACCEPTED' | 'IN_TRANSIT' | 'ADMITTED' | 'DISCHARGED' | 'CANCELLED';
+  referring_doctor: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BedOccupancy {
+  id: string;
+  facility_id: string;
+  ward_name: string;
+  total_beds: number;
+  occupied_beds: number;
+  oxygen_supported_beds: number;
+  ventilator_beds: number;
+  last_updated_by: string;
+  updated_at: string;
+}
+
+export interface DutyRoster {
+  id: string;
+  facility_id: string;
+  staff_name: string;
+  role_title: string;
+  shift: string;
+  roster_date: string;
+  status: 'ON_DUTY' | 'SCHEDULED' | 'ON_LEAVE' | 'ON_CALL';
+  contact_number?: string;
+  created_at: string;
+}
+
+export interface DiseaseSurveillance {
+  id: string;
+  surveillance_code: string;
+  district_id: string;
+  facility_id?: string;
+  disease_name: string;
+  reported_cases: number;
+  suspected_cases: number;
+  confirmed_cases: number;
+  reporting_week: string;
+  reporting_date: string;
+  alert_level: 'NORMAL' | 'WATCH' | 'OUTBREAK_WARNING' | 'EPIDEMIC_SURGE';
+  affected_villages?: string;
+  action_taken?: string;
+  reported_by: string;
+  created_at: string;
+}
+
+export interface StrategicReserve {
+  id: string;
+  depot_name: string;
+  depot_code: string;
+  state_id: string;
+  medicine_id: string;
+  medicine_name?: string;
+  buffer_quantity: number;
+  reserved_quantity: number;
+  minimum_threshold: number;
+  depot_manager: string;
+  last_inspected: string;
+  created_at: string;
+}
+
