@@ -1,4 +1,4 @@
-import type { Centre, Medicine, KPIData, AlertItem, MatrixData, MapLocationItem } from '../types';
+import type { Centre, Medicine, KPIData, AlertItem, MatrixData, MapLocationItem, AvailabilityEnquiry } from '../types';
 import rawMapLocations from './mapFallbackData.json';
 
 export const FALLBACK_CENTRES: Centre[] = [
@@ -289,6 +289,54 @@ export const FALLBACK_MATRIX: MatrixData = {
 export const FALLBACK_MAP_LOCATIONS: MapLocationItem[] = rawMapLocations as MapLocationItem[];
 
 // ================= OFFLINE ENTERPRISE HEALTHCARE FALLBACK DATA =================
+
+export const FALLBACK_ENQUIRIES: AvailabilityEnquiry[] = [
+  {
+    id: 'enq-001',
+    pharmacy_id: 'pharma_apollo_cbe',
+    pharmacy_name: 'Apollo Pharmacy - Gandhipuram',
+    medicine_id: 'med_pcm',
+    medicine_name: 'Paracetamol 500mg (Dolo 650)',
+    patient_name: 'Kavitha Murugan',
+    patient_phone: '+91 98421 12345',
+    requested_quantity: 2,
+    status: 'CONFIRMED',
+    confirmed_by: 'K. Ramesh, Head Pharmacist',
+    notes: 'Urgent availability check for high fever during evening hours',
+    reply_notes: 'Physical stock verified: 40 boxes available on shelf. Reserved for 24 hours under your name.',
+    created_at: new Date(Date.now() - 3600000 * 4).toISOString()
+  },
+  {
+    id: 'enq-002',
+    pharmacy_id: 'pharma_kovai_valparai',
+    pharmacy_name: 'Kovai Medicals - Valparai Bazaar',
+    medicine_id: 'med_pcm_syr',
+    medicine_name: 'Paracetamol Syrup 60ml Pediatric',
+    patient_name: 'Kavitha Murugan',
+    patient_phone: '+91 98421 12345',
+    requested_quantity: 1,
+    status: 'PENDING',
+    confirmed_by: undefined,
+    notes: 'Checking pediatric formulation stock for child fever',
+    reply_notes: 'Under review by on-duty chemist. Physical shelf check in progress.',
+    created_at: new Date(Date.now() - 3600000 * 24).toISOString()
+  },
+  {
+    id: 'enq-003',
+    pharmacy_id: 'phc_valparai',
+    pharmacy_name: 'PHC Valparai Dispensary',
+    medicine_id: 'med_amox',
+    medicine_name: 'Amoxicillin 250mg Capsules',
+    patient_name: 'Kavitha Murugan',
+    patient_phone: '+91 98421 12345',
+    requested_quantity: 10,
+    status: 'CONFIRMED',
+    confirmed_by: 'R. Karpagam, D.Pharm (Govt. Pharmacist)',
+    notes: 'Govt PHC free supply availability inquiry',
+    reply_notes: 'Free TNMSC stock available in PHC dispensary room 3. Please bring doctor prescription / OP chit.',
+    created_at: new Date(Date.now() - 3600000 * 48).toISOString()
+  }
+];
 
 export const FALLBACK_APPOINTMENTS = [
   {

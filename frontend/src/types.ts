@@ -41,12 +41,16 @@ export interface PharmacyItem {
 export interface AvailabilityEnquiry {
   id: string;
   pharmacy_id: string;
+  pharmacy_name?: string;
   medicine_id: string;
+  medicine_name?: string;
   patient_name: string;
   patient_phone: string;
   requested_quantity: number;
-  status: 'PENDING' | 'CONFIRMED' | 'OUT_OF_STOCK';
+  status: 'PENDING' | 'CONFIRMED' | 'OUT_OF_STOCK' | 'RESOLVED';
   confirmed_by?: string;
+  notes?: string;
+  reply_notes?: string;
   created_at: string;
 }
 

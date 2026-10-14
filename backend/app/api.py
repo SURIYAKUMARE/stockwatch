@@ -1602,6 +1602,7 @@ class AvailabilityEnquiryCreate(BaseModel):
     patient_name: str
     patient_phone: str
     requested_quantity: int = 1
+    notes: Optional[str] = None
 
 @router.get("/pharmacies")
 def list_pharmacies(district: Optional[str] = None, session: Session = Depends(get_session)):
@@ -1711,6 +1712,42 @@ def get_pharmacy_availability(pharmacy_id: str, session: Session = Depends(get_s
         "warning": "Inventory may be subject to dispensing in progress. Always verify upon visit."
     }
 
+def _enrich_enquiry(enq: models.AvailabilityEnquiry, session: Session):
+    ph = session.get(models.Pharmacy, enq.pharmacy_id)
+    facility_name = ph.pharmacy_name if ph else None
+    if not facility_name:
+        f = session.get(models.Facility, enq.pharmacy_id)
+        if f:
+            facility_name = f.facility_name
+        else:
+            c = session.get(models.Centre, enq.pharmacy_id)
+            if c:
+                facility_name = c.name
+            else:
+                facility_name = enq.pharmacy_id
+
+    med = session.get(models.Medicine, enq.medicine_id)
+    med_name = med.name if med else None
+    if not med_name:
+        cm = session.get(models.CanonicalMedicine, enq.medicine_id)
+        med_name = cm.canonical_name if cm else enq.medicine_id
+
+    return {
+        "id": enq.id,
+        "pharmacy_id": enq.pharmacy_id,
+        "pharmacy_name": facility_name,
+        "medicine_id": enq.medicine_id,
+        "medicine_name": med_name,
+        "patient_name": enq.patient_name,
+        "patient_phone": enq.patient_phone,
+        "requested_quantity": enq.requested_quantity,
+        "status": enq.status,
+        "confirmed_by": enq.confirmed_by,
+        "notes": enq.notes or "Stock availability inquiry",
+        "reply_notes": enq.reply_notes or ("Stock confirmed on shelf" if enq.status == "CONFIRMED" else ("Stock currently unavailable" if enq.status == "OUT_OF_STOCK" else "Under pharmacist review")),
+        "created_at": enq.created_at.isoformat() if hasattr(enq.created_at, "isoformat") else str(enq.created_at)
+    }
+
 @router.post("/pharmacies/enquiry")
 def submit_availability_enquiry(req: AvailabilityEnquiryCreate, session: Session = Depends(get_session)):
     enquiry = models.AvailabilityEnquiry(
@@ -1719,24 +1756,27 @@ def submit_availability_enquiry(req: AvailabilityEnquiryCreate, session: Session
         patient_name=req.patient_name,
         patient_phone=req.patient_phone,
         requested_quantity=req.requested_quantity,
+        notes=req.notes,
         status="PENDING"
     )
     session.add(enquiry)
     session.commit()
     session.refresh(enquiry)
-    return {"status": "submitted", "enquiry_id": enquiry.id, "message": "Enquiry sent to pharmacist for verification"}
+    return {"status": "submitted", "enquiry_id": enquiry.id, "message": "Enquiry sent to pharmacist for verification", "enquiry": _enrich_enquiry(enquiry, session)}
 
 @router.get("/pharmacies/enquiry")
 def list_availability_enquiries(pharmacy_id: Optional[str] = None, session: Session = Depends(get_session)):
     query = select(models.AvailabilityEnquiry)
     if pharmacy_id:
         query = query.where(models.AvailabilityEnquiry.pharmacy_id == pharmacy_id)
-    return session.exec(query.order_by(models.AvailabilityEnquiry.created_at.desc())).all()
+    enquiries = session.exec(query.order_by(models.AvailabilityEnquiry.created_at.desc())).all()
+    return [_enrich_enquiry(e, session) for e in enquiries]
 
 @router.post("/pharmacies/enquiry/{enquiry_id}/confirm")
 def confirm_availability_enquiry(
     enquiry_id: str,
-    action: str = Query("CONFIRM"), # CONFIRM, OUT_OF_STOCK
+    action: str = Query("CONFIRM"), # CONFIRM, OUT_OF_STOCK, RESOLVED
+    reply_notes: Optional[str] = Query(None),
     current_user: models.User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -1744,10 +1784,52 @@ def confirm_availability_enquiry(
     if not enq:
         raise HTTPException(status_code=404, detail="Enquiry not found")
         
-    enq.status = "CONFIRMED" if action == "CONFIRM" else "OUT_OF_STOCK"
-    enq.confirmed_by = current_user.username
+    enq.status = "CONFIRMED" if action == "CONFIRM" else ("RESOLVED" if action == "RESOLVED" else "OUT_OF_STOCK")
+    enq.confirmed_by = current_user.name or current_user.username
+    if reply_notes:
+        enq.reply_notes = reply_notes
+    elif action == "CONFIRM":
+        enq.reply_notes = "Stock verified on shelf. Reserved for 24 hours."
+    elif action == "OUT_OF_STOCK":
+        enq.reply_notes = "Stock currently exhausted at this branch."
     session.commit()
-    return {"status": "updated", "enquiry_status": enq.status}
+    session.refresh(enq)
+    return {"status": "updated", "enquiry_status": enq.status, "enquiry": _enrich_enquiry(enq, session)}
+
+@router.get("/patient/enquiries")
+def list_patient_enquiries(phone: Optional[str] = None, session: Session = Depends(get_session)):
+    query = select(models.AvailabilityEnquiry)
+    if phone:
+        query = query.where(models.AvailabilityEnquiry.patient_phone == phone)
+    enquiries = session.exec(query.order_by(models.AvailabilityEnquiry.created_at.desc())).all()
+    return [_enrich_enquiry(e, session) for e in enquiries]
+
+@router.post("/patient/enquiries")
+def create_patient_enquiry(req: AvailabilityEnquiryCreate, session: Session = Depends(get_session)):
+    enquiry = models.AvailabilityEnquiry(
+        pharmacy_id=req.pharmacy_id,
+        medicine_id=req.medicine_id,
+        patient_name=req.patient_name,
+        patient_phone=req.patient_phone,
+        requested_quantity=req.requested_quantity,
+        notes=req.notes,
+        status="PENDING"
+    )
+    session.add(enquiry)
+    session.commit()
+    session.refresh(enquiry)
+    return _enrich_enquiry(enquiry, session)
+
+@router.post("/patient/enquiries/{enquiry_id}/resolve")
+def resolve_patient_enquiry(enquiry_id: str, session: Session = Depends(get_session)):
+    enq = session.get(models.AvailabilityEnquiry, enquiry_id)
+    if not enq:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    enq.status = "RESOLVED"
+    enq.reply_notes = "Resolved and collected by patient."
+    session.commit()
+    session.refresh(enq)
+    return _enrich_enquiry(enq, session)
 
 
 # =====================================================================
@@ -3354,7 +3436,7 @@ def get_patient_records(
     records = session.exec(
         select(models.MedicalRecord)
         .where(models.MedicalRecord.patient_id == pid)
-        .order_by(models.MedicalRecord.record_date.desc())
+        .order_by(models.MedicalRecord.created_at.desc())
     ).all()
     
     if not records and pid == "user_patient_01":
@@ -3529,12 +3611,89 @@ def create_retail_invoice(
         created_by=current_user.username if current_user else "Retail Pharmacist"
     )
     session.add(invoice)
+
+    # AUTOMATICALLY SYNC TO PATIENT MEDICAL RECORDS & DIGITAL HEALTH PROFILE
+    target_patient_id = "user_patient_01"
+    if req.patient_phone:
+        matched_user = session.exec(
+            select(models.User).where(models.User.username == req.patient_phone)
+        ).first()
+        if matched_user:
+            target_patient_id = matched_user.id
+        else:
+            p_user = session.exec(select(models.User).where(models.User.role == "patient")).first()
+            if p_user:
+                target_patient_id = p_user.id
+
+    # Format prescribed/dispensed medicines for the patient's record
+    meds_for_patient = []
+    for itm in req.items:
+        meds_for_patient.append({
+            "name": itm.medicine_name,
+            "dosage": f"{itm.qty} units (Batch: {itm.batch})",
+            "duration": "Course as advised by physician",
+            "instructions": f"Counter Dispensed at ₹{itm.unit_price:.2f}/unit. Line total: ₹{round(itm.qty * itm.unit_price * (1 + itm.gst_rate / 100.0), 2):.2f}"
+        })
+
+    # Get pharmacy name for friendly display
+    ph_obj = session.get(models.Pharmacy, req.pharmacy_id)
+    ph_name = ph_obj.pharmacy_name if ph_obj else ("Kovai Medicals (Valparai)" if "valparai" in req.pharmacy_id else "Apollo Pharmacy")
+
+    med_record = models.MedicalRecord(
+        patient_id=target_patient_id,
+        facility_id=req.pharmacy_id,
+        record_type="PHARMACY_BILL",
+        title=f"Pharmacy Tax Invoice #{inv_num} · {ph_name}",
+        doctor_name=req.doctor_name or "Retail Pharmacist (FEFO Dispensed)",
+        record_date=date.today().isoformat(),
+        diagnosis=f"Retail Pharmacy POS Dispensing · Payment: {req.payment_mode} (₹{total_amount:.2f})",
+        medicines_prescribed_json=json.dumps(meds_for_patient),
+        lab_results_json=json.dumps({
+            "Invoice Number": inv_num,
+            "Pharmacy": ph_name,
+            "Payment Mode": req.payment_mode,
+            "Subtotal": f"₹{subtotal:.2f}",
+            "GST (CGST+SGST 12%)": f"₹{(cgst + sgst):.2f}",
+            "Total Amount Paid": f"₹{total_amount:.2f}",
+            "Customer Mobile": req.patient_phone or "N/A"
+        }),
+        notes=f"Tax invoice generated for customer {req.patient_name} ({req.patient_phone}). Stock deducted from shelf and synced to digital health records."
+    )
+    session.add(med_record)
     session.commit()
     session.refresh(invoice)
+    session.refresh(med_record)
     
     res_dict = invoice.model_dump()
     res_dict["items"] = items_data
+    res_dict["patient_synced"] = True
+    res_dict["medical_record_id"] = med_record.id
+    res_dict["synced_patient_id"] = target_patient_id
+    res_dict["med_record"] = med_record.model_dump()
+    res_dict["med_record"]["medicines_prescribed"] = meds_for_patient
     return res_dict
+
+@router.get("/patient/invoices")
+def get_patient_invoices(
+    phone: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    stmt = select(models.RetailInvoice)
+    if phone:
+        clean_phone = phone.replace("+91", "").strip()
+        stmt = stmt.where(models.RetailInvoice.patient_phone.contains(clean_phone))
+    invoices = session.exec(stmt.order_by(models.RetailInvoice.created_at.desc()).limit(30)).all()
+    if not invoices:
+        invoices = session.exec(select(models.RetailInvoice).order_by(models.RetailInvoice.created_at.desc()).limit(10)).all()
+    out = []
+    for inv in invoices:
+        d = inv.model_dump()
+        try:
+            d["items"] = json.loads(inv.items_json)
+        except Exception:
+            d["items"] = []
+        out.append(d)
+    return out
 
 @router.get("/pharmacy/invoices")
 def get_retail_invoices(

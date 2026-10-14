@@ -23,16 +23,22 @@ import {
   FileText,
   Stethoscope,
   Trash2,
-  CalendarCheck
+  CalendarCheck,
+  Send,
+  MessageSquare,
+  ClipboardPen,
+  HelpCircle,
+  Store
 } from 'lucide-react';
 import type { Language } from '../../i18n';
 import type { AppScreen } from '../../components/nav/AppShell';
-import type { Appointment, MedicalRecord, MapLocationItem } from '../../types';
+import type { Appointment, MedicalRecord, MapLocationItem, AvailabilityEnquiry } from '../../types';
 import { LeafletMap } from '../../components/LeafletMap';
 import {
   FALLBACK_APPOINTMENTS,
   FALLBACK_MEDICAL_RECORDS,
-  FALLBACK_MAP_LOCATIONS
+  FALLBACK_MAP_LOCATIONS,
+  FALLBACK_ENQUIRIES
 } from '../../db/demoFallbackData';
 import {
   savePriceComparisonToCache,
@@ -134,7 +140,26 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   const [showAddReminderModal, setShowAddReminderModal] = useState(false);
 
   // Navigation tab state synced with activeScreen
-  const [activeTab, setActiveTab] = useState<'search' | 'appointments' | 'records' | 'reminders'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'appointments' | 'records' | 'reminders' | 'enquiries'>('search');
+
+  // Availability Enquiries State
+  const [enquiries, setEnquiries] = useState<AvailabilityEnquiry[]>(() => {
+    const saved = localStorage.getItem('stockwatch_patient_enquiries');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    return FALLBACK_ENQUIRIES;
+  });
+  const [isLoadingEnquiries, setIsLoadingEnquiries] = useState(false);
+  const [showNewEnquiryModal, setShowNewEnquiryModal] = useState(false);
+  const [enquiryPharmacyId, setEnquiryPharmacyId] = useState('pharma_apollo_cbe');
+  const [enquiryMedicineId, setEnquiryMedicineId] = useState('med_pcm');
+  const [enquiryQty, setEnquiryQty] = useState(1);
+  const [enquiryNotes, setEnquiryNotes] = useState('');
+  const [enquiryPatientName, setEnquiryPatientName] = useState('Kavitha Murugan');
+  const [enquiryPatientPhone, setEnquiryPatientPhone] = useState('+91 98421 12345');
+  const [enquirySuccessMsg, setEnquirySuccessMsg] = useState<string | null>(null);
+  const [enquiryFilterStatus, setEnquiryFilterStatus] = useState<string>('ALL');
 
   // Appointments State
   const [appointments, setAppointments] = useState<Appointment[]>(FALLBACK_APPOINTMENTS as any);
@@ -175,12 +200,17 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
   useEffect(() => {
     if (activeScreen === 'appointments') setActiveTab('appointments');
     else if (activeScreen === 'medical_records') setActiveTab('records');
+    else if (activeScreen === 'my_enquiries') setActiveTab('enquiries');
     else if (activeScreen === 'nearby_pharmacies') {
       setActiveTab('search');
       setSearchDisplayMode('MAP');
     }
+    else if (activeScreen === 'saved_pharmacies') {
+      setActiveTab('search');
+    }
     else if (activeScreen === 'medicine_search') {
       setActiveTab('search');
+      setSearchDisplayMode('LIST');
     }
   }, [activeScreen]);
 
@@ -271,12 +301,74 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
       const res = await fetch('/api/patient/records');
       if (res.ok) {
         const data = await res.json();
-        setMedicalRecords(data);
+        try {
+          const localBills = JSON.parse(localStorage.getItem('stockwatch_patient_records') || '[]');
+          const existingIds = new Set(data.map((r: any) => r.id));
+          const uniqueLocal = localBills.filter((b: any) => !existingIds.has(b.id));
+          setMedicalRecords([...uniqueLocal, ...data]);
+        } catch {
+          setMedicalRecords(data);
+        }
       }
     } catch {
-      setMedicalRecords(FALLBACK_MEDICAL_RECORDS as any);
+      try {
+        const localBills = JSON.parse(localStorage.getItem('stockwatch_patient_records') || '[]');
+        setMedicalRecords([...localBills, ...(FALLBACK_MEDICAL_RECORDS as any)]);
+      } catch {
+        setMedicalRecords(FALLBACK_MEDICAL_RECORDS as any);
+      }
     } finally {
       setIsLoadingRecords(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleBillAdded = () => {
+      fetchRecords();
+      fetchRemindersData();
+    };
+    window.addEventListener('stockwatch_patient_record_added', handleBillAdded);
+    return () => window.removeEventListener('stockwatch_patient_record_added', handleBillAdded);
+  }, []);
+
+  const handleAddDispensedToSchedule = async (medName: string, instructions?: string) => {
+    const cleanName = medName.replace(/\(.*?\)/g, '').trim();
+    const newSchItem: MedicationScheduleItem = {
+      id: 'sch-' + Date.now(),
+      medicine_name: cleanName,
+      strength: 'Standard Dosage',
+      dosage_form: 'Tablet / Dose',
+      dose_quantity: '1 unit',
+      frequency_per_day: 2,
+      schedule_times: ['08:00', '20:00'],
+      times_with_status: [
+        { time: '08:00', status: 'PENDING' },
+        { time: '20:00', status: 'PENDING' }
+      ],
+      start_date: new Date().toISOString().split('T')[0],
+      prescribed_instructions: instructions || 'Dispensed by Retail Pharmacy. Take with water after food.',
+      status: 'ACTIVE'
+    };
+
+    setReminders((prev) => [newSchItem, ...prev]);
+    setActiveTab('reminders');
+    try {
+      await fetch('/api/patient/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicine_name: cleanName,
+          strength: 'Standard Dosage',
+          dosage_form: 'Tablet / Dose',
+          dose_quantity: '1 unit',
+          frequency_per_day: 2,
+          schedule_times: ['08:00', '20:00'],
+          start_date: new Date().toISOString().split('T')[0],
+          prescribed_instructions: instructions || 'Dispensed by Retail Pharmacy.'
+        })
+      });
+    } catch {
+      // offline fallback
     }
   };
 
@@ -475,12 +567,136 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
     }
   };
 
+  const fetchEnquiries = async () => {
+    setIsLoadingEnquiries(true);
+    try {
+      const res = await fetch('/api/patient/enquiries');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setEnquiries(data);
+          localStorage.setItem('stockwatch_patient_enquiries', JSON.stringify(data));
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Using local fallback enquiries', e);
+    } finally {
+      setIsLoadingEnquiries(false);
+    }
+  };
+
+  const handleSubmitEnquiry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetLoc = mapLocations.find((l) => l.id === enquiryPharmacyId);
+    const targetName =
+      targetLoc?.name ||
+      (enquiryPharmacyId === 'pharma_apollo_cbe'
+        ? 'Apollo Pharmacy - Gandhipuram'
+        : enquiryPharmacyId === 'pharma_kovai_valparai'
+        ? 'Kovai Medicals - Valparai Bazaar'
+        : 'PHC Valparai Dispensary');
+
+    const medMap: Record<string, string> = {
+      med_pcm: 'Paracetamol 500mg (Dolo 650)',
+      med_pcm_syr: 'Paracetamol Syrup 60ml Pediatric',
+      med_amox: 'Amoxicillin 250mg Capsules',
+      med_amox_500: 'Amoxicillin 500mg Capsules',
+      med_ors: 'ORS Sachets 20.5g',
+      med_zinc: 'Zinc Sulfate 20mg',
+      med_metformin: 'Metformin 500mg Tablets',
+      med_cetirizine: 'Cetirizine 10mg Tablets',
+      med_asv: 'Anti-Snake Venom 10ml Inj',
+      med_arv: 'Anti-Rabies Vaccine 0.5ml'
+    };
+    const medName = medMap[enquiryMedicineId] || comparisonData?.medicine_name || enquiryMedicineId;
+
+    const newEnqObj: AvailabilityEnquiry = {
+      id: 'enq-' + Date.now(),
+      pharmacy_id: enquiryPharmacyId,
+      pharmacy_name: targetName,
+      medicine_id: enquiryMedicineId,
+      medicine_name: medName,
+      patient_name: enquiryPatientName,
+      patient_phone: enquiryPatientPhone,
+      requested_quantity: Number(enquiryQty) || 1,
+      status: 'PENDING',
+      notes: enquiryNotes || 'Checking medicine stock availability on shelf',
+      reply_notes: 'Under review by on-duty chemist. Physical shelf check in progress.',
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch('/api/patient/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pharmacy_id: enquiryPharmacyId,
+          medicine_id: enquiryMedicineId,
+          patient_name: enquiryPatientName,
+          patient_phone: enquiryPatientPhone,
+          requested_quantity: Number(enquiryQty) || 1,
+          notes: enquiryNotes
+        })
+      });
+      if (res.ok) {
+        const savedEnq = await res.json();
+        setEnquiries((prev) => {
+          const updated = [savedEnq, ...prev];
+          localStorage.setItem('stockwatch_patient_enquiries', JSON.stringify(updated));
+          return updated;
+        });
+      } else {
+        setEnquiries((prev) => {
+          const updated = [newEnqObj, ...prev];
+          localStorage.setItem('stockwatch_patient_enquiries', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    } catch {
+      setEnquiries((prev) => {
+        const updated = [newEnqObj, ...prev];
+        localStorage.setItem('stockwatch_patient_enquiries', JSON.stringify(updated));
+        return updated;
+      });
+    }
+
+    setEnquirySuccessMsg(`Enquiry submitted to ${targetName}!`);
+    setTimeout(() => {
+      setShowNewEnquiryModal(false);
+      setEnquirySuccessMsg(null);
+      setEnquiryNotes('');
+    }, 1200);
+  };
+
+  const handleResolveEnquiry = async (id: string) => {
+    try {
+      await fetch(`/api/patient/enquiries/${id}/resolve`, { method: 'POST' });
+    } catch {
+      // local fallback
+    }
+    setEnquiries((prev) => {
+      const updated = prev.map((e) =>
+        e.id === id ? { ...e, status: 'RESOLVED' as const, reply_notes: 'Resolved and collected by patient.' } : e
+      );
+      localStorage.setItem('stockwatch_patient_enquiries', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleOpenEnquiryForSource = (s: PriceComparisonSource) => {
+    setEnquiryPharmacyId(s.facility_id);
+    if (selectedMedId) setEnquiryMedicineId(selectedMedId);
+    setShowNewEnquiryModal(true);
+  };
+
   useEffect(() => {
     fetchPriceComparison(searchQuery);
     fetchRemindersData();
     fetchAppointments();
     fetchRecords();
     fetchMapLocations();
+    fetchEnquiries();
   }, []);
 
   return (
@@ -523,6 +739,14 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
             >
               <Plus size={14} />
               <span>Add Reminder</span>
+            </button>
+          ) : activeTab === 'enquiries' ? (
+            <button
+              onClick={() => setShowNewEnquiryModal(true)}
+              className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs transition-colors"
+            >
+              <Send size={14} />
+              <span>Submit New Enquiry</span>
             </button>
           ) : (
             <button
@@ -594,6 +818,23 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
         >
           <BellRing size={15} />
           <span>{isTa ? 'மருந்து அட்டவணை' : 'Daily Medication Schedule'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('enquiries')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === 'enquiries'
+              ? 'bg-[#0F6B6B] text-white shadow-xs'
+              : 'text-[#5B6B7A] hover:bg-[#F7F9FB] hover:text-[#14202B]'
+          }`}
+        >
+          <ClipboardPen size={15} />
+          <span>{isTa ? 'என் கேள்விகள் & இருப்பு நிலை' : 'My Enquiries'}</span>
+          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+            activeTab === 'enquiries' ? 'bg-white/20 text-white' : 'bg-teal-100 text-teal-800'
+          }`}>
+            {enquiries.length}
+          </span>
         </button>
       </div>
 
@@ -695,78 +936,131 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
             </div>
           ) : (
             <div className="space-y-4">
-              {medicalRecords.map((rec) => (
-                <div key={rec.id} className="bg-white border border-[#E3E8EE] rounded-xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-start justify-between pb-3 border-b border-[#E3E8EE]">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                          rec.record_type === 'PRESCRIPTION' ? 'bg-teal-100 text-teal-800' : 'bg-purple-100 text-purple-800'
-                        }`}>
-                          {rec.record_type}
-                        </span>
-                        <span className="text-xs text-[#5B6B7A]">{rec.record_date}</span>
+              {medicalRecords.map((rec) => {
+                const isPharmacyBill = rec.record_type === 'PHARMACY_BILL';
+                return (
+                  <div
+                    key={rec.id}
+                    className={`bg-white border rounded-xl p-5 shadow-xs space-y-4 transition-all ${
+                      isPharmacyBill ? 'border-amber-300 ring-1 ring-amber-100' : 'border-[#E3E8EE]'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-3 border-b border-[#E3E8EE]">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                            isPharmacyBill
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : rec.record_type === 'PRESCRIPTION'
+                              ? 'bg-teal-100 text-teal-800'
+                              : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {isPharmacyBill ? '🧾 Retail Pharmacy Bill & POS Dispensed' : rec.record_type}
+                          </span>
+                          <span className="text-xs text-[#5B6B7A]">{rec.record_date}</span>
+                        </div>
+                        <h3 className="text-sm font-bold text-[#14202B] mt-1.5 flex items-center gap-1.5">
+                          {rec.title}
+                        </h3>
+                        <p className="text-xs text-[#5B6B7A]">
+                          {isPharmacyBill ? 'Dispensing Chemist / RMP:' : 'Consulting Physician:'}{' '}
+                          <strong className="text-[#14202B]">{rec.doctor_name}</strong>
+                        </p>
                       </div>
-                      <h3 className="text-sm font-bold text-[#14202B] mt-1">{rec.title}</h3>
-                      <p className="text-xs text-[#5B6B7A]">Consulting Physician: <strong className="text-[#14202B]">{rec.doctor_name}</strong></p>
-                    </div>
-                  </div>
 
-                  {rec.diagnosis && (
-                    <div className="text-xs bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-900">
-                      <strong>Clinical Diagnosis:</strong> {rec.diagnosis}
+                      {isPharmacyBill && (
+                        <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => window.print()}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-[#E3E8EE] hover:bg-slate-50 text-[#14202B] flex items-center gap-1"
+                          >
+                            <span>Print Bill</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {rec.medicines_prescribed && rec.medicines_prescribed.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-[#14202B]">Prescribed Medications</h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs border border-[#E3E8EE] rounded-lg overflow-hidden">
-                          <thead className="bg-[#F7F9FB] text-[#5B6B7A] font-semibold border-b border-[#E3E8EE]">
-                            <tr>
-                              <th className="py-2 px-3">Medicine</th>
-                              <th className="py-2 px-3">Dosage</th>
-                              <th className="py-2 px-3">Duration</th>
-                              <th className="py-2 px-3">Instructions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#E3E8EE]">
-                            {rec.medicines_prescribed.map((m: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-slate-50">
-                                <td className="py-2 px-3 font-bold text-[#14202B]">{m.name}</td>
-                                <td className="py-2 px-3 text-[#5B6B7A]">{m.dosage}</td>
-                                <td className="py-2 px-3 text-[#5B6B7A]">{m.duration}</td>
-                                <td className="py-2 px-3 text-[#0F6B6B] font-medium">{m.instructions}</td>
+                    {rec.diagnosis && (
+                      <div className={`text-xs p-3 rounded-lg border ${
+                        isPharmacyBill
+                          ? 'bg-amber-50/70 border-amber-200 text-amber-950'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                      }`}>
+                        <strong>{isPharmacyBill ? 'Transaction Summary:' : 'Clinical Diagnosis:'}</strong> {rec.diagnosis}
+                      </div>
+                    )}
+
+                    {rec.medicines_prescribed && rec.medicines_prescribed.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-[#14202B]">
+                            {isPharmacyBill ? 'Dispensed Medications (FEFO Tracked)' : 'Prescribed Medications'}
+                          </h4>
+                          {isPharmacyBill && (
+                            <span className="text-[10px] text-[#0F6B6B] font-bold">
+                              Click "+ Daily Schedule" to auto-add dosage reminders
+                            </span>
+                          )}
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border border-[#E3E8EE] rounded-lg overflow-hidden">
+                            <thead className="bg-[#F7F9FB] text-[#5B6B7A] font-semibold border-b border-[#E3E8EE]">
+                              <tr>
+                                <th className="py-2 px-3">Medicine</th>
+                                <th className="py-2 px-3">Quantity / Dose</th>
+                                <th className="py-2 px-3">Instructions / Pricing</th>
+                                <th className="py-2 px-3 text-right">Schedule Reminder</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-[#E3E8EE]">
+                              {rec.medicines_prescribed.map((m: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-slate-50">
+                                  <td className="py-2.5 px-3 font-bold text-[#14202B]">{m.name}</td>
+                                  <td className="py-2.5 px-3 text-[#5B6B7A]">{m.dosage}</td>
+                                  <td className="py-2.5 px-3 text-[#0F6B6B] font-medium">{m.instructions || m.duration}</td>
+                                  <td className="py-2.5 px-3 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAddDispensedToSchedule(m.name, m.instructions)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] font-bold text-[10px] shadow-2xs transition"
+                                    >
+                                      <Plus size={11} />
+                                      <span>+ Daily Schedule</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {rec.lab_results && Object.keys(rec.lab_results).length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-[#14202B]">Diagnostic Laboratory Findings</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {Object.entries(rec.lab_results).map(([param, val]: [string, any], idx) => (
-                          <div key={idx} className="bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg p-2.5 text-xs">
-                            <span className="text-[10px] text-[#5B6B7A] font-semibold block">{param}</span>
-                            <span className="font-bold text-[#14202B]">{String(val)}</span>
-                          </div>
-                        ))}
+                    {rec.lab_results && Object.keys(rec.lab_results).length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-[#14202B]">
+                          {isPharmacyBill ? 'Official GST Tax Invoice Details' : 'Diagnostic Laboratory Findings'}
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {Object.entries(rec.lab_results).map(([param, val]: [string, any], idx) => (
+                            <div key={idx} className="bg-[#F7F9FB] border border-[#E3E8EE] rounded-lg p-2.5 text-xs">
+                              <span className="text-[10px] text-[#5B6B7A] font-semibold block">{param}</span>
+                              <span className="font-bold text-[#14202B]">{String(val)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {rec.notes && (
-                    <div className="text-xs text-[#5B6B7A] bg-gray-50 p-3 rounded-lg border border-gray-200">
-                      <strong>Physician Advice:</strong> {rec.notes}
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {rec.notes && (
+                      <div className="text-xs text-[#5B6B7A] bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <strong>{isPharmacyBill ? 'Counter Dispense Notes:' : 'Physician Advice:'}</strong> {rec.notes}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1095,16 +1389,27 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
                           <span className="text-[10px] text-[#5B6B7A] block">{s.last_updated}</span>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <a
-                            href={s.directions_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0F6B6B]/10 hover:bg-[#0F6B6B]/20 text-[#0F6B6B] font-bold text-[11px] transition-colors"
-                          >
-                            <Navigation size={12} />
-                            <span>Google Maps</span>
-                            <ExternalLink size={10} />
-                          </a>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEnquiryForSource(s)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#0F6B6B] border border-teal-200 font-bold text-[11px] transition-colors"
+                              title="Ask availability at this pharmacy"
+                            >
+                              <MessageSquare size={11} />
+                              <span>Enquire</span>
+                            </button>
+                            <a
+                              href={s.directions_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0F6B6B]/10 hover:bg-[#0F6B6B]/20 text-[#0F6B6B] font-bold text-[11px] transition-colors"
+                            >
+                              <Navigation size={12} />
+                              <span>Google Maps</span>
+                              <ExternalLink size={10} />
+                            </a>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1115,6 +1420,293 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
           )
         )}
       </div>
+      )}
+
+      {/* ── SECTION 5: PATIENT ENQUIRIES & STOCK VERIFICATION (MY ENQUIRIES TAB) ── */}
+      {activeTab === 'enquiries' && (
+        <div className="space-y-4">
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-teal-50 border border-teal-200 rounded-xl p-4">
+            <div>
+              <h2 className="text-sm font-bold text-[#14202B] flex items-center gap-2">
+                <ClipboardPen className="text-[#0F6B6B]" size={17} />
+                <span>Medicine Availability Enquiries & Reservation Requests</span>
+              </h2>
+              <p className="text-xs text-[#5B6B7A] mt-0.5">
+                Submit stock queries directly to PHC dispensaries and local retail chemists. Pharmacists verify physical shelf inventory in real-time and reserve bottles/strips under your name.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowNewEnquiryModal(true)}
+              className="px-3.5 py-2 text-xs font-bold rounded-lg bg-[#0F6B6B] text-white hover:bg-[#0a4f4f] flex items-center gap-1.5 shadow-xs shrink-0 transition-colors"
+            >
+              <Send size={14} />
+              <span>+ New Stock Enquiry</span>
+            </button>
+          </div>
+
+          {/* Quick Metrics Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white p-3.5 rounded-xl border border-[#E3E8EE] shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-[#5B6B7A] tracking-wider">Total Enquiries</span>
+              <div className="text-xl font-bold font-mono text-[#14202B] mt-1">{enquiries.length}</div>
+              <span className="text-[10px] text-[#5B6B7A]">Lifetime requests</span>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-[#E3E8EE] shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider">Stock Confirmed</span>
+              <div className="text-xl font-bold font-mono text-emerald-600 mt-1">
+                {enquiries.filter((e) => e.status === 'CONFIRMED').length}
+              </div>
+              <span className="text-[10px] text-emerald-700">Reserved for pickup</span>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-[#E3E8EE] shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-amber-600 tracking-wider">Awaiting Verification</span>
+              <div className="text-xl font-bold font-mono text-amber-600 mt-1">
+                {enquiries.filter((e) => e.status === 'PENDING').length}
+              </div>
+              <span className="text-[10px] text-amber-700">Chemist reviewing shelf</span>
+            </div>
+            <div className="bg-white p-3.5 rounded-xl border border-[#E3E8EE] shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Resolved / Collected</span>
+              <div className="text-xl font-bold font-mono text-slate-700 mt-1">
+                {enquiries.filter((e) => e.status === 'RESOLVED').length}
+              </div>
+              <span className="text-[10px] text-slate-500">Dispensed to patient</span>
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {[
+              { id: 'ALL', label: 'All Enquiries', count: enquiries.length },
+              { id: 'CONFIRMED', label: 'Confirmed & Reserved', count: enquiries.filter((e) => e.status === 'CONFIRMED').length },
+              { id: 'PENDING', label: 'Pending Review', count: enquiries.filter((e) => e.status === 'PENDING').length },
+              { id: 'RESOLVED', label: 'Completed', count: enquiries.filter((e) => e.status === 'RESOLVED').length },
+              { id: 'OUT_OF_STOCK', label: 'Out of Stock', count: enquiries.filter((e) => e.status === 'OUT_OF_STOCK').length }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setEnquiryFilterStatus(f.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                  enquiryFilterStatus === f.id
+                    ? 'bg-[#0F6B6B] text-white shadow-xs'
+                    : 'bg-white border border-[#E3E8EE] text-[#5B6B7A] hover:bg-slate-50 hover:text-[#14202B]'
+                }`}
+              >
+                <span>{f.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                  enquiryFilterStatus === f.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-[#5B6B7A]'
+                }`}>
+                  {f.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Enquiries List */}
+          {(() => {
+            const filteredEnquiries = enquiries.filter((e) =>
+              enquiryFilterStatus === 'ALL' ? true : e.status === enquiryFilterStatus
+            );
+
+            if (filteredEnquiries.length === 0) {
+              return (
+                <div className="bg-white rounded-xl border border-[#E3E8EE] p-10 text-center space-y-3">
+                  <div className="w-12 h-12 bg-teal-50 text-[#0F6B6B] rounded-full flex items-center justify-center mx-auto">
+                    <MessageSquare size={22} />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#14202B]">No Enquiries Found</h3>
+                  <p className="text-xs text-[#5B6B7A] max-w-md mx-auto">
+                    {enquiryFilterStatus === 'ALL'
+                      ? 'You have not submitted any stock availability enquiries yet. Submit an enquiry to check if a medicine is physically in stock at a nearby dispensary.'
+                      : `No enquiries currently match the status "${enquiryFilterStatus}".`}
+                  </p>
+                  <button
+                    onClick={() => setShowNewEnquiryModal(true)}
+                    className="px-4 py-2 bg-[#0F6B6B] text-white rounded-lg text-xs font-bold hover:bg-[#0a4f4f] transition-colors shadow-xs"
+                  >
+                    + Submit New Enquiry
+                  </button>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {filteredEnquiries.map((enq) => {
+                  const isConfirmed = enq.status === 'CONFIRMED';
+                  const isPending = enq.status === 'PENDING';
+                  const isOutOfStock = enq.status === 'OUT_OF_STOCK';
+                  const isResolved = enq.status === 'RESOLVED';
+
+                  return (
+                    <div
+                      key={enq.id}
+                      className={`bg-white rounded-xl border p-4.5 shadow-2xs space-y-3 transition-all hover:shadow-xs ${
+                        isConfirmed
+                          ? 'border-emerald-200'
+                          : isPending
+                          ? 'border-amber-200'
+                          : isOutOfStock
+                          ? 'border-rose-200'
+                          : 'border-[#E3E8EE]'
+                      }`}
+                    >
+                      {/* Top Row: Store & Status */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F1F5F9] pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              isConfirmed
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : isPending
+                                ? 'bg-amber-100 text-amber-800'
+                                : isOutOfStock
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            <Store size={16} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-[#14202B]">
+                              {enq.pharmacy_name || enq.pharmacy_id}
+                            </h3>
+                            <span className="text-[11px] text-[#5B6B7A] flex items-center gap-1">
+                              <Clock size={12} />
+                              Submitted:{' '}
+                              {new Date(enq.created_at).toLocaleString([], {
+                                dateStyle: 'medium',
+                                timeStyle: 'short'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="self-start sm:self-auto">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1.5 ${
+                              isConfirmed
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : isPending
+                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                : isOutOfStock
+                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}
+                          >
+                            {isConfirmed && <CheckCircle2 size={13} className="text-emerald-700" />}
+                            {isPending && <Clock size={13} className="text-amber-700 animate-spin" />}
+                            {isOutOfStock && <X size={13} className="text-rose-700" />}
+                            {isResolved && <Check size={13} className="text-slate-700" />}
+                            <span>
+                              {isConfirmed
+                                ? 'Stock Verified & Reserved'
+                                : isPending
+                                ? 'Pending Pharmacist Check'
+                                : isOutOfStock
+                                ? 'Stock Out of Hand'
+                                : 'Collected / Resolved'}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Middle: Medicine Details & Query */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E2E8F0] space-y-1">
+                          <div className="text-[10px] uppercase font-bold text-[#64748B] tracking-wider">
+                            Medicine Requested
+                          </div>
+                          <div className="font-bold text-[#14202B] text-sm flex items-center gap-1.5">
+                            <Pill size={15} className="text-[#0F6B6B]" />
+                            <span>{enq.medicine_name || enq.medicine_id}</span>
+                          </div>
+                          <div className="text-[11px] text-[#475569]">
+                            Quantity: <strong>{enq.requested_quantity || 1} units</strong> · Patient:{' '}
+                            <strong>{enq.patient_name}</strong> ({enq.patient_phone})
+                          </div>
+                          {enq.notes && (
+                            <div className="text-[11px] text-[#334155] pt-1 border-t border-[#E2E8F0] italic">
+                              "{enq.notes}"
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Chemist Verified Response */}
+                        <div
+                          className={`p-3 rounded-lg border space-y-1 ${
+                            isConfirmed
+                              ? 'bg-emerald-50/70 border-emerald-200'
+                              : isPending
+                              ? 'bg-amber-50/70 border-amber-200'
+                              : isOutOfStock
+                              ? 'bg-rose-50/70 border-rose-200'
+                              : 'bg-slate-50 border-slate-200'
+                          }`}
+                        >
+                          <div className="text-[10px] uppercase font-bold text-[#64748B] tracking-wider">
+                            Pharmacist Response
+                          </div>
+                          <div className="text-xs font-semibold text-[#14202B] leading-relaxed">
+                            {enq.reply_notes ||
+                              (isConfirmed
+                                ? 'Physical shelf stock verified. Medicines are reserved at the counter for 24 hours.'
+                                : isPending
+                                ? 'Enquiry submitted to dispensary terminal. On-duty chemist is verifying physical shelf count.'
+                                : isOutOfStock
+                                ? 'Item is temporarily out of stock. Alternative stores suggested in network.'
+                                : 'Completed.')}
+                          </div>
+                          {enq.confirmed_by && (
+                            <div className="text-[10px] text-[#64748B] pt-1 border-t border-[#E2E8F0]">
+                              Verified by: <strong className="text-[#334155]">{enq.confirmed_by}</strong>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Action Buttons */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F1F5F9]">
+                        <div className="text-[11px] text-[#64748B]">
+                          Enquiry Ref:{' '}
+                          <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">{enq.id}</code>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedMapLocId(enq.pharmacy_id);
+                              setActiveTab('search');
+                              setSearchDisplayMode('MAP');
+                            }}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-[#E3E8EE] hover:bg-slate-50 text-[#334155] flex items-center gap-1"
+                          >
+                            <MapPin size={12} className="text-[#0F6B6B]" />
+                            <span>View on Map</span>
+                          </button>
+
+                          {isConfirmed && (
+                            <button
+                              type="button"
+                              onClick={() => handleResolveEnquiry(enq.id)}
+                              className="px-3 py-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-2xs transition-colors"
+                            >
+                              <Check size={12} />
+                              <span>Mark as Collected</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {/* ── Verified Drug Monograph Modal ── */}
@@ -1509,6 +2101,149 @@ export function PatientDashboard({ activeScreen, lang }: PatientDashboardProps) 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Submit New Stock Enquiry Modal ── */}
+      {showNewEnquiryModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#E3E8EE] animate-in fade-in duration-200">
+            <div className="p-5 border-b border-[#E3E8EE] flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#14202B] flex items-center gap-2">
+                  <ClipboardPen size={18} className="text-[#0F6B6B]" />
+                  <span>Submit Medicine Availability Enquiry</span>
+                </h3>
+                <p className="text-xs text-[#5B6B7A] mt-0.5">
+                  Direct inquiry to pharmacy or PHC dispensary terminal for physical stock verification.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewEnquiryModal(false);
+                  setEnquirySuccessMsg(null);
+                }}
+                className="p-1 rounded-lg hover:bg-gray-100 text-[#5B6B7A]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {enquirySuccessMsg ? (
+              <div className="p-8 text-center space-y-3">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={24} />
+                </div>
+                <h4 className="text-sm font-bold text-emerald-900">{enquirySuccessMsg}</h4>
+                <p className="text-xs text-emerald-700">
+                  The pharmacist has received your inquiry and will update stock confirmation shortly.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitEnquiry} className="p-5 space-y-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Target Pharmacy / PHC Dispensary</label>
+                  <select
+                    value={enquiryPharmacyId}
+                    onChange={(e) => setEnquiryPharmacyId(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
+                  >
+                    {mapLocations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name} ({loc.type_label} - {loc.block || loc.district || 'Coimbatore'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-[#14202B] mb-1">Medicine Name</label>
+                    <select
+                      value={enquiryMedicineId}
+                      onChange={(e) => setEnquiryMedicineId(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg bg-white"
+                    >
+                      <option value="med_pcm">Paracetamol 500mg (Dolo 650)</option>
+                      <option value="med_pcm_syr">Paracetamol Syrup 60ml Pediatric</option>
+                      <option value="med_amox">Amoxicillin 250mg Capsules</option>
+                      <option value="med_amox_500">Amoxicillin 500mg Capsules</option>
+                      <option value="med_ors">ORS Sachets 20.5g</option>
+                      <option value="med_zinc">Zinc Sulfate 20mg</option>
+                      <option value="med_metformin">Metformin 500mg</option>
+                      <option value="med_cetirizine">Cetirizine 10mg</option>
+                      <option value="med_asv">Anti-Snake Venom 10ml Inj</option>
+                      <option value="med_arv">Anti-Rabies Vaccine 0.5ml</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-[#14202B] mb-1">Quantity Needed</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={enquiryQty}
+                      onChange={(e) => setEnquiryQty(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-[#14202B] mb-1">Your Full Name</label>
+                    <input
+                      type="text"
+                      value={enquiryPatientName}
+                      onChange={(e) => setEnquiryPatientName(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-[#14202B] mb-1">Contact Phone</label>
+                    <input
+                      type="tel"
+                      value={enquiryPatientPhone}
+                      onChange={(e) => setEnquiryPatientPhone(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#14202B] mb-1">Enquiry Question / Notes</label>
+                  <textarea
+                    rows={3}
+                    placeholder="e.g. Please check shelf stock for pediatric fever syrup. Can you reserve 1 bottle for evening pickup?"
+                    value={enquiryNotes}
+                    onChange={(e) => setEnquiryNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#E3E8EE]">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewEnquiryModal(false)}
+                    className="px-3.5 py-2 border border-[#E3E8EE] text-[#5B6B7A] font-semibold rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#0F6B6B] hover:bg-[#0a4f4f] text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5"
+                  >
+                    <Send size={13} />
+                    <span>Send Enquiry to Pharmacy</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

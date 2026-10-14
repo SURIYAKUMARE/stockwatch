@@ -166,6 +166,13 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
         const inv = await res.json();
         setActiveInvoiceDetail(inv);
         await fetchInvoices();
+        if (inv.med_record) {
+          try {
+            const curRecs = JSON.parse(localStorage.getItem('stockwatch_patient_records') || '[]');
+            localStorage.setItem('stockwatch_patient_records', JSON.stringify([inv.med_record, ...curRecs]));
+            window.dispatchEvent(new CustomEvent('stockwatch_patient_record_added', { detail: inv.med_record }));
+          } catch (e) { /* ignore */ }
+        }
       }
     } catch {
       const fakeInv: RetailInvoice = {
@@ -186,6 +193,36 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
       };
       setInvoices(prev => [fakeInv, ...prev]);
       setActiveInvoiceDetail(fakeInv);
+
+      const fakeRec = {
+        id: 'rec-' + Date.now(),
+        patient_id: 'user_patient_01',
+        facility_id: pharmacyId,
+        record_type: 'PHARMACY_BILL',
+        title: `Pharmacy Tax Invoice #${fakeInv.invoice_number} · Kovai Medicals`,
+        doctor_name: doctorName || 'Retail Pharmacist (FEFO Dispensed)',
+        record_date: new Date().toISOString().split('T')[0],
+        diagnosis: `Retail Pharmacy POS Dispensing · Payment: ${paymentMode} (₹${grandTotal.toFixed(2)})`,
+        medicines_prescribed: [{
+          name: `${medName} (${billedQuantity} units)`,
+          dosage: `${billedQuantity} units (Batch: BTH-FEFO-2026)`,
+          duration: 'Course as advised by physician',
+          instructions: `Counter Dispensed at ₹${unitPrice}/unit. Line total: ₹${grandTotal.toFixed(2)}`
+        }],
+        lab_results: {
+          "Invoice Number": fakeInv.invoice_number,
+          "Pharmacy": "Kovai Medicals (Valparai)",
+          "Payment Mode": paymentMode,
+          "Total Amount Paid": `₹${grandTotal.toFixed(2)}`,
+          "Customer Mobile": patientPhone
+        },
+        notes: `Tax invoice generated for customer ${patientName} (${patientPhone}). Stock deducted from shelf and synced to digital health records.`
+      };
+      try {
+        const curRecs = JSON.parse(localStorage.getItem('stockwatch_patient_records') || '[]');
+        localStorage.setItem('stockwatch_patient_records', JSON.stringify([fakeRec, ...curRecs]));
+        window.dispatchEvent(new CustomEvent('stockwatch_patient_record_added', { detail: fakeRec }));
+      } catch (e) { /* ignore */ }
     } finally {
       setIsSubmitting(false);
     }
@@ -336,7 +373,10 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
 
           <form onSubmit={handleCreateBill} className="space-y-3 text-xs">
             <div>
-              <label className="block font-semibold text-[#14202B] mb-1">Customer / Patient Name</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-semibold text-[#14202B]">Customer / Patient Name</label>
+                <span className="text-[10px] text-[#0F6B6B] font-bold">Auto-syncs to Patient App</span>
+              </div>
               <input
                 type="text"
                 required
@@ -347,13 +387,36 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
             </div>
 
             <div>
-              <label className="block font-semibold text-[#14202B] mb-1">Customer Mobile (for WhatsApp Receipt)</label>
+              <label className="block font-semibold text-[#14202B] mb-1">Customer Mobile (for Instant Portal & WhatsApp Sync)</label>
               <input
                 type="text"
                 value={patientPhone}
                 onChange={(e) => setPatientPhone(e.target.value)}
                 className="w-full px-3 py-2 border border-[#E3E8EE] rounded-lg"
               />
+              <div className="flex items-center gap-1.5 mt-1.5 overflow-x-auto text-[10px]">
+                <span className="text-slate-500 font-semibold shrink-0">Quick Fill:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPatientName('Kavitha Murugan');
+                    setPatientPhone('+91 98421 12345');
+                  }}
+                  className="px-2 py-0.5 rounded bg-teal-50 text-[#0F6B6B] border border-teal-200 hover:bg-teal-100 font-bold shrink-0"
+                >
+                  Kavitha (Demo Patient)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPatientName('M. Arumugam');
+                    setPatientPhone('+91 94432 11223');
+                  }}
+                  className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium shrink-0"
+                >
+                  M. Arumugam
+                </button>
+              </div>
             </div>
 
             {/* Prescribing Doctor & Schedule H toggle */}
@@ -631,6 +694,17 @@ export function PosBillingScreen({ lang, pharmacyId = 'pharma_valparai_01' }: { 
                 <span className="text-[10px] text-[#5B6B7A] font-semibold block">Doctor & Payment</span>
                 <div className="font-bold text-[#14202B]">{activeInvoiceDetail.doctor_name || 'Counter Issue'}</div>
                 <div className="text-emerald-700 font-bold">Paid via {activeInvoiceDetail.payment_mode}</div>
+              </div>
+            </div>
+
+            {/* Auto-sync confirmation to Patient app */}
+            <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-xs text-teal-950 flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-[#0F6B6B] shrink-0 mt-0.5" />
+              <div>
+                <strong className="block text-[#0F6B6B]">Auto-Synced to Patient Portal</strong>
+                <span>
+                  This bill and dispensed medication details have been automatically synchronized to <strong>{activeInvoiceDetail.patient_name}</strong>'s Digital Health Records and Daily Medication Schedule.
+                </span>
               </div>
             </div>
 

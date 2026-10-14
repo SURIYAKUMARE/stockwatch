@@ -258,8 +258,10 @@ class AvailabilityEnquiry(SQLModel, table=True):
     patient_name: str
     patient_phone: str
     requested_quantity: int = 1
-    status: str = "PENDING" # PENDING, CONFIRMED, OUT_OF_STOCK
+    status: str = "PENDING" # PENDING, CONFIRMED, OUT_OF_STOCK, RESOLVED
     confirmed_by: Optional[str] = None
+    notes: Optional[str] = None
+    reply_notes: Optional[str] = None
     created_at: datetime = Field(default_factory=get_utc_now)
 
 class AuditLog(SQLModel, table=True):

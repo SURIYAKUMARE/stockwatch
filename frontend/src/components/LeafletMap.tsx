@@ -65,18 +65,20 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     markersLayerRef.current = markersLayer;
     routesLayerRef.current = routesLayer;
 
-    // Primary basemap: CartoDB Positron
-    const primaryTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    // Primary basemap: Standard OpenStreetMap (Clean, open-source, fast, 100% free with NO API key needed)
+    const primaryTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd'
+      subdomains: ['a', 'b', 'c'],
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // Fallback basemap: Standard OpenStreetMap on tile loading error
+    // Fallback basemap: ESRI World Street Map on tile loading error
     primaryTiles.on('tileerror', () => {
       if (!fallbackAddedRef.current) {
         fallbackAddedRef.current = true;
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 19,
+          attribution: 'Tiles &copy; Esri'
         }).addTo(map);
       }
     });
