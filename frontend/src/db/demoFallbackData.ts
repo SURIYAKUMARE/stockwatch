@@ -615,6 +615,52 @@ export const FALLBACK_STRATEGIC_RESERVES = [
     depot_manager: 'Shri S. K. Sharma',
     last_inspected: '2026-10-09',
     created_at: new Date().toISOString()
+  },
+  {
+    id: 'res-4',
+    depot_name: 'Emergency Vaccine & Antivenom Depot - Hyderabad',
+    depot_code: 'CMSD-HYD',
+    state_id: 'TS',
+    medicine_id: 'med_asv',
+    medicine_name: 'Anti-Snake Venom 10ml Inj',
+    buffer_quantity: 8000,
+    reserved_quantity: 1200,
+    minimum_threshold: 1500,
+    depot_manager: 'Dr. K. Srinivas, Director',
+    last_inspected: '2026-10-13',
+    created_at: new Date().toISOString()
   }
 ];
+
+export const FALLBACK_PROCUREMENT_DATA = {
+  active_central_contracts: 14,
+  total_contract_value_inr: '₹ 142.5 Crores',
+  supply_chain_resilience_score: 96.2,
+  average_supplier_lead_time_days: 4.8,
+  central_suppliers: [
+    { id: 'sup-01', name: 'Bharat Biotech & Pharma Ltd', contact_person: 'Dr. V. Menon', email: 'contracts@bharatpharma.in', phone: '+91 40 2340 9901', lead_time_days: 4, compliance_rating: 98.8, categories: 'Vaccines, ASV, Biologics', location: 'Hyderabad, Telangana', gmp_certified: true },
+    { id: 'sup-02', name: 'Hindustan Antibiotics Limited', contact_person: 'Shri A. K. Joshi', email: 'tenders@hindantibiotics.gov.in', phone: '+91 20 2742 5411', lead_time_days: 5, compliance_rating: 97.4, categories: 'Antibiotics & Anti-infectives', location: 'Pune, Maharashtra', gmp_certified: true },
+    { id: 'sup-03', name: 'Kovai Formulations Pvt Ltd', contact_person: 'R. Selvaraj', email: 'supply@kovaiformulations.com', phone: '+91 422 2688 123', lead_time_days: 2, compliance_rating: 99.2, categories: 'Essential EDL, Syrups, Analgesics', location: 'Coimbatore, Tamil Nadu', gmp_certified: true },
+    { id: 'sup-04', name: 'Cadila Lifesciences Central', contact_person: 'P. N. Trivedi', email: 'central.orders@cadila.com', phone: '+91 79 2656 4321', lead_time_days: 6, compliance_rating: 98.1, categories: 'Cardiovascular, Diabetes & NCDs', location: 'Ahmedabad, Gujarat', gmp_certified: true }
+  ],
+  macro_orders: [
+    { id: 'po-nat-081', po_number: 'PO-NAT-2026-081', supplier_name: 'Bharat Biotech & Pharma Ltd', medicine_name: 'Anti-Snake Venom 10ml Inj', quantity: 15000, unit_price: 1200.0, total_value_inr: '₹ 1,80,00,000', destination_depot: 'CMSD Chennai & Hyderabad', status: 'IN_TRANSIT', eta: '2026-10-18', created_at: '2026-10-12' },
+    { id: 'po-nat-082', po_number: 'PO-NAT-2026-082', supplier_name: 'Hindustan Antibiotics Limited', medicine_name: 'Amoxicillin 250mg Capsules', quantity: 400000, unit_price: 5.5, total_value_inr: '₹ 22,00,000', destination_depot: 'Northern Regional Buffer Depot - Delhi', status: 'DELIVERED', eta: '2026-10-12', created_at: '2026-10-08' },
+    { id: 'po-nat-083', po_number: 'PO-NAT-2026-083', supplier_name: 'Kovai Formulations Pvt Ltd', medicine_name: 'Paracetamol Syrup 60ml Pediatric', quantity: 120000, unit_price: 18.0, total_value_inr: '₹ 21,60,000', destination_depot: 'CMSD Chennai Hub', status: 'IN_PRODUCTION', eta: '2026-10-22', created_at: '2026-10-14' },
+    { id: 'po-nat-084', po_number: 'PO-NAT-2026-084', supplier_name: 'Cadila Lifesciences Central', medicine_name: 'Metformin 500mg Sustained Release', quantity: 650000, unit_price: 2.2, total_value_inr: '₹ 14,30,000', destination_depot: 'Western Regional Buffer Depot - Mumbai', status: 'IN_TRANSIT', eta: '2026-10-19', created_at: '2026-10-11' }
+  ]
+};
+
+export const FALLBACK_PHARMACOVIGILANCE_DATA = {
+  total_reported_events: 18,
+  severity_breakdown: { 'LIFE_THREATENING': 1, 'SEVERE': 4, 'MODERATE': 9, 'MILD': 4 },
+  signals_by_medicine: { 'Amoxicillin 250mg': 6, 'Paracetamol Syrup 60ml': 4, 'Anti-Snake Venom 10ml': 3, 'Metformin 500mg': 3, 'Cetirizine 10mg': 2 },
+  recent_signals: [
+    { id: 'adr-1', report_reference: 'ADR-2026-004128', facility_name: 'PHC Valparai (Tea Estate Belt)', medicine_name: 'Amoxicillin 250mg Capsules', batch_number: 'BTH-AMX-2026', reaction_description: 'Erythematous maculopapular rash with facial pruritus 2 hours after oral dose.', severity: 'MODERATE', outcome: 'RECOVERED', action_taken: 'DRUG_WITHDRAWN', patient_age: 42, patient_gender: 'Female', reported_by: 'R. Karpagam, D.Pharm (PHC Pharmacist)', onset_date: '2026-10-14' },
+    { id: 'adr-2', report_reference: 'ADR-2026-004129', facility_name: 'Community Health Centre Pollachi', medicine_name: 'Paracetamol Syrup 60ml Pediatric', batch_number: 'BTH-2025-101', reaction_description: 'Pediatric acute nausea and periorbital edema after first dose.', severity: 'MODERATE', outcome: 'RECOVERED', action_taken: 'DRUG_WITHDRAWN', patient_age: 5, patient_gender: 'Male', reported_by: 'Dr. M. Sangeetha (MO CHC)', onset_date: '2026-10-13' },
+    { id: 'adr-3', report_reference: 'ADR-2026-004130', facility_name: 'PHC Aliyar (Forest Fringe)', medicine_name: 'Anti-Snake Venom 10ml Inj', batch_number: 'ASV-LOT-992', reaction_description: 'Anaphylactoid bronchospasm managed with IV Adrenaline & Hydrocortisone.', severity: 'LIFE_THREATENING', outcome: 'RECOVERED', action_taken: 'DRUG_WITHDRAWN', patient_age: 34, patient_gender: 'Female', reported_by: 'Dr. S. Kulanthaivel, MBBS', onset_date: '2026-10-12' },
+    { id: 'adr-4', report_reference: 'ADR-2026-004131', facility_name: 'Apollo Pharmacy — Gandhipuram', medicine_name: 'Metformin 500mg Sustained Release', batch_number: 'BTH-MET-884', reaction_description: 'Severe gastrointestinal distress, weakness, suspected lactic acidosis warning symptoms.', severity: 'SEVERE', outcome: 'RECOVERING', action_taken: 'DOSE_REDUCED', patient_age: 58, patient_gender: 'Male', reported_by: 'K. Senthil, B.Pharm (Retail Chemist)', onset_date: '2026-10-11' },
+    { id: 'adr-5', report_reference: 'ADR-2026-004132', facility_name: 'PHC Samathur', medicine_name: 'Cetirizine 10mg', batch_number: 'BTH-CTZ-12', reaction_description: 'Extreme daytime somnolence, lightheadedness and mild vertigo.', severity: 'MILD', outcome: 'RECOVERED', action_taken: 'DOSE_REDUCED', patient_age: 61, patient_gender: 'Male', reported_by: 'M. Selvam, Staff Nurse', onset_date: '2026-10-10' }
+  ]
+};
 

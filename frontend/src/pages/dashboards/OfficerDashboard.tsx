@@ -348,9 +348,13 @@ export function OfficerDashboard({ activeScreen, onSelectScreen, lang, isOnline,
       return <DistrictIndentsScreen lang={lang} districtId="coimbatore" />;
 
     case 'strategic_reserves':
+      return <NationalReservesScreen lang={lang} initialTab="reserves" onSelectScreen={onSelectScreen} />;
+
     case 'national_procurement':
+      return <NationalReservesScreen lang={lang} initialTab="procurement" onSelectScreen={onSelectScreen} />;
+
     case 'pharmacovigilance_hub':
-      return <NationalReservesScreen lang={lang} />;
+      return <NationalReservesScreen lang={lang} initialTab="pharmacovigilance" onSelectScreen={onSelectScreen} />;
 
     default:
       return (
