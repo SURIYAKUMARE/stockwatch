@@ -47,9 +47,19 @@ if not DATABASE_URL.startswith("sqlite"):
 
 engine = create_engine(DATABASE_URL, **engine_kwargs)
 
+from sqlmodel import SQLModel, create_engine, Session, text
+
 def init_db():
     from backend import models
     SQLModel.metadata.create_all(engine)
+    # Safe backward-compatible migrations for existing SQLite databases
+    with engine.connect() as conn:
+        for col_def in ["notes TEXT", "reply_notes TEXT"]:
+            try:
+                conn.execute(text(f"ALTER TABLE availabilityenquiry ADD COLUMN {col_def}"))
+                conn.commit()
+            except Exception:
+                pass
 
 def get_session():
     with Session(engine) as session:
