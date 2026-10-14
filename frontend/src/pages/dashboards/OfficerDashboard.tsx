@@ -54,12 +54,13 @@ import {
 
 interface OfficerDashboardProps {
   activeScreen: AppScreen;
+  onSelectScreen?: (screen: AppScreen) => void;
   lang: Language;
   isOnline: boolean;
   onTransactionSuccess: () => void;
 }
 
-export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSuccess }: OfficerDashboardProps) {
+export function OfficerDashboard({ activeScreen, onSelectScreen, lang, isOnline, onTransactionSuccess }: OfficerDashboardProps) {
   const { user } = useAuth();
   const [centres, setCentres] = useState<Centre[]>(FALLBACK_CENTRES);
   const [medicines, setMedicines] = useState<Medicine[]>(FALLBACK_MEDICINES);
@@ -100,9 +101,20 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
     return () => clearInterval(livePoll);
   }, []);
 
+  const handleNavigateToTransfers = (centreId: string, medicineId: string) => {
+    setSelectedCentreId(centreId);
+    setSelectedMedicineId(medicineId);
+    if (onSelectScreen) {
+      onSelectScreen('transfers_network');
+    }
+  };
+
   const handleSelectCell = (centreId: string, medicineId: string) => {
     setSelectedCentreId(centreId);
     setSelectedMedicineId(medicineId);
+    if (onSelectScreen) {
+      onSelectScreen('centre_detail');
+    }
   };
 
   const handleAcknowledgeAlert = async (alertId: string) => {
@@ -157,7 +169,7 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
         <PriorityAlerts
           alerts={alerts}
           lang={lang}
-          onNavigateToTransfers={handleSelectCell}
+          onNavigateToTransfers={handleNavigateToTransfers}
           onAcknowledgeAlert={handleAcknowledgeAlert}
           onTakeAction={handleTakeAction}
           isLoading={isLoading}
@@ -179,7 +191,7 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
       return <MedicineCatalogue lang={lang} />;
     }
     if (activeScreen === 'map_view') {
-      return <NetworkMapScreen lang={lang} onNavigateToTransfers={handleSelectCell} />;
+      return <NetworkMapScreen lang={lang} onNavigateToTransfers={handleNavigateToTransfers} />;
     }
     if (activeScreen === 'audit_logs') {
       return <AuditLogs lang={lang} />;
@@ -202,8 +214,8 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
           matrixData={matrixData}
           kpiData={kpiData}
           lang={lang}
-          onSelectCell={(cId, mId) => { handleSelectCell(cId, mId); }}
-          onNavigateToTransfers={(cId, mId) => { handleSelectCell(cId, mId); }}
+          onSelectCell={handleSelectCell}
+          onNavigateToTransfers={handleNavigateToTransfers}
           isLoading={isLoading}
         />
       );
@@ -214,7 +226,7 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
         <PriorityAlerts
           alerts={alerts}
           lang={lang}
-          onNavigateToTransfers={handleSelectCell}
+          onNavigateToTransfers={handleNavigateToTransfers}
           onAcknowledgeAlert={handleAcknowledgeAlert}
           onTakeAction={handleTakeAction}
           isLoading={isLoading}
@@ -271,7 +283,7 @@ export function OfficerDashboard({ activeScreen, lang, isOnline, onTransactionSu
       return (
         <NetworkMapScreen
           lang={lang}
-          onNavigateToTransfers={(cId, mId) => { handleSelectCell(cId, mId); }}
+          onNavigateToTransfers={handleNavigateToTransfers}
           preselectedLocationId={selectedCentreId}
         />
       );

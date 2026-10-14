@@ -133,6 +133,7 @@ export function Router() {
       ) : (
         <OfficerDashboard
           activeScreen={activeScreen}
+          onSelectScreen={setActiveScreen}
           lang={lang}
           isOnline={isOnline}
           onTransactionSuccess={() => setPendingSyncCount(getOfflineQueue().length)}

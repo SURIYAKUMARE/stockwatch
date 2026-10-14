@@ -112,6 +112,15 @@ export const Transfers: React.FC<TransfersProps> = ({
   };
 
   useEffect(() => {
+    if (initialShortageCentreId) {
+      setShortageCentreId(initialShortageCentreId);
+    }
+    if (initialMedicineId) {
+      setMedicineId(initialMedicineId);
+    }
+  }, [initialShortageCentreId, initialMedicineId]);
+
+  useEffect(() => {
     fetchSuggestions();
     fetchPooled();
     fetchEscalations();
